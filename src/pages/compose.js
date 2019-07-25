@@ -109,18 +109,6 @@ const Compose = () => {
 
   }
 
-  useEffect(() => {
-    if (window === undefined) return
-    window.addEventListener("keydown", onKeyDown, true)
-    window.addEventListener("mousemove", onMouseMove, true)
-
-    return () => {
-      if (window === undefined) return
-      window.removeEventListener("keydown", onKeyDown, true)
-      window.removeEventListener("mousemove", onMouseMove, true)
-    }
-  }, [onKeyDown, onMouseMove, mouse, translate, elements])
-
   {
     /* EVENT HANDLERS */
   }
@@ -154,6 +142,18 @@ const Compose = () => {
     },
     [mouse, translate]
   )
+
+  useEffect(() => {
+    if (window === undefined) return
+    window.addEventListener("keydown", onKeyDown, true)
+    window.addEventListener("mousemove", onMouseMove, true)
+
+    return () => {
+      if (window === undefined) return
+      window.removeEventListener("keydown", onKeyDown, true)
+      window.removeEventListener("mousemove", onMouseMove, true)
+    }
+  }, [onKeyDown, onMouseMove, mouse, translate, elements])
 
   {
     /* RENDER */
