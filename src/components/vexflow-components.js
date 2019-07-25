@@ -1,6 +1,10 @@
 import React, { useState, useEffect } from "react"
 import { easyScoreToExactNotes, voicingToEasyScore } from "../lib/music.js"
-import Vex from "vexflow"
+try {
+  Vex = require("vexflow")
+} catch (err) {
+  console.log("skipping vexflow")
+}
 import styled, { keyframes } from "styled-components"
 
 const VexPlaybackButton = styled.button`
