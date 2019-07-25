@@ -4,12 +4,15 @@ import { Vexflow } from "../components/vexflow-components.js"
 import Button from "@material-ui/core/Button"
 import { equals } from "ramda"
 import { Spotify, Youtube } from "../components/embeds"
+import keycode from "keycode"
 import empty from "is-empty"
 
 const Compose = () => {
   const [mouse, setMouse] = useState({ x: 100, y: 100 })
   const [translate, setTranslate] = useState({ x: 0, y: 0 })
+  const [zoom, setZoom] = useState(0.5)
   const [elements, setElements] = useState([])
+  const [showHelp, setShowHelp] = useState(false)
 
   {
     /* FUNCTIONS FOR COMMANDS */
@@ -20,7 +23,7 @@ const Compose = () => {
       ...elements,
       {
         component: (
-          <p x={mouse.x} y={mouse.y}>
+          <p x={mouse.x} y={mouse.y} zoom={zoom}>
             boo
           </p>
         ),
@@ -33,7 +36,7 @@ const Compose = () => {
     setElements(elements => [
       ...elements,
       {
-        component: <Vexflow x={mouse.x} y={mouse.y} />,
+        component: <Vexflow x={mouse.x} y={mouse.y} zoom={zoom} />,
         type: "vexflow",
       },
     ])
@@ -43,7 +46,7 @@ const Compose = () => {
     setElements(elements => [
       ...elements,
       {
-        component: <Youtube src={"1234"} x={mouse.x} y={mouse.y} />,
+        component: <Youtube src={"1234"} x={mouse.x} y={mouse.y} zoom={zoom} />,
         type: "youtube",
       },
     ])
@@ -93,14 +96,14 @@ const Compose = () => {
     'create text field': { fn: createTextField, keys: [16, 32],  mode: 'any'},
     'create score': { fn: createVexflow, keys: [16, 86],  mode: 'any'},
     'create youtube embed': { fn: createYoutube, keys: [16, 89],  mode: 'any'},
-    'enter command': { fn: (() => alert('show command window')), keys: [32], mode: 'noedit'},
-    'move left': { fn: (() => setTranslate(translate => ({ ...translate, x: translate.y + 150}))),
+    'show help': { fn: (() => setShowHelp(prev => !prev)), keys: [16, 191], mode: 'noedit'},
+    'move left': { fn: (() => setTranslate(cur => ({ ...cur, x: cur.x + 150}))),
                    keys: [37], mode: 'noedit'},
-    'move up': { fn: (() => setTranslate(translate => ({ ...translate, y: translate.y - 150 }))),
+    'move up': { fn: (() => setTranslate(cur => ({ ...cur, y: cur.y + 150 }))),
                  keys: [38], mode: 'noedit'},
-    'move right': { fn: (() => setTranslate(translate => ({ ...translate, x: translate.x - 150 }))),
+    'move right': { fn: (() => setTranslate(cur => ({ ...cur, x: cur.x - 150 }))),
                     keys: [39], mode: 'noedit'},
-    'move down': { fn: (() => setTranslate(translate => ({ ...translate, x: translate.x + 150 }))),
+    'move down': { fn: (() => setTranslate(cur => ({ ...cur, y: cur.y - 150 }))),
                    keys: [40], mode: 'noedit'},
     'unfocus all': { fn: (() => document.activeElement.blur()), keys: [27], mode: 'any'}
 
@@ -154,7 +157,19 @@ const Compose = () => {
     /* RENDER */
   }
   return (
-    <div style={{ overflowX: "hidden", overflowY: "hidden" }}>
+    <div
+      onWheel={e => {
+        e.preventDefault()
+        e.stopPropagation()
+        let dx = e.deltaX
+        let dy = e.deltaY
+        setTranslate(translate => ({
+          x: translate.x - dx,
+          y: translate.y - dy,
+        }))
+      }}
+      style={{ overflowX: "hidden", overflowY: "hidden" }}
+    >
       <h1
         style={{
           position: "fixed",
@@ -176,11 +191,17 @@ const Compose = () => {
           fontFamily: "sans-serif",
         }}
       >
-        ({-1 * translate.x}, {-1 * translate.y})
+        ({-1 * translate.x}, {-1 * translate.y}) {zoom}
       </span>
       {/* CLEAR */}
       <Button
-        style={{ position: "fixed", bottom: 20, left: 20, color: "grey" }}
+        style={{
+          position: "fixed",
+          bottom: 20,
+          left: 20,
+          color: "grey",
+          zIndex: 14,
+        }}
         onClick={() => {
           setElements([])
         }}
@@ -189,10 +210,40 @@ const Compose = () => {
       </Button>
       {/* TO ORIGIN */}
       <Button
-        style={{ position: "fixed", bottom: 20, left: 120, color: "grey" }}
+        style={{
+          position: "fixed",
+          bottom: 20,
+          left: 120,
+          color: "grey",
+          zIndex: 14,
+        }}
         onClick={() => setTranslate({ x: 0, y: 0 })}
       >
         origin
+      </Button>
+      <Button
+        style={{
+          position: "fixed",
+          bottom: 20,
+          left: 220,
+          color: "grey",
+          zIndex: 14,
+        }}
+        onClick={() => setZoom(prev => prev + 0.2)}
+      >
+        zoom in
+      </Button>
+      <Button
+        style={{
+          position: "fixed",
+          bottom: 20,
+          left: 320,
+          color: "grey",
+          zIndex: 14,
+        }}
+        onClick={() => setZoom(prev => prev - 0.2)}
+      >
+        zoom out
       </Button>
 
       {/* NAVIGATION */}
@@ -230,30 +281,34 @@ const Compose = () => {
       >
         ↓
       </Button>
-      <p
-        style={{
-          position: "fixed",
-          right: 20,
-          top: 20,
-          color: "grey",
-          fontFamily: "sans-serif",
-          fontSize: "80%",
-        }}
-      >
-        keys
-        <br />
-        arrows to move
-        <br />
-        shift-WASD to navigate by screen lengths
-        <br />
-        shift-V for sheet music
-        <br />
-        shift-SPACE for text
-        <br />
-        shift-Y for youtube
-        <br />
-        shift-X to delete last element
-      </p>
+      {showHelp ? (
+        <p
+          style={{
+            position: "fixed",
+            backgroundColor: "white",
+            right: "40vw",
+            top: "10vh",
+            color: "grey",
+            fontFamily: "sans-serif",
+            fontSize: "80%",
+            zIndex: 2,
+          }}
+        >
+          keys
+          <br />
+          <br />
+          {Object.keys(commands).map(commandName => {
+            let command = commands[commandName]
+            return (
+              <>
+                {commandName}:{" "}
+                {command.keys.map(keyCode => keycode(keyCode) + " ")}
+                <br />
+              </>
+            )
+          })}
+        </p>
+      ) : null}
 
       <Link
         to="/"
@@ -281,6 +336,7 @@ const Compose = () => {
                 {...component.props}
                 translateX={translate.x}
                 translateY={translate.y}
+                globalZoom={zoom}
                 idx={idx}
               />
             )
@@ -290,6 +346,7 @@ const Compose = () => {
                 {...component.props}
                 translateX={translate.x}
                 translateY={translate.y}
+                globalZoom={zoom}
                 idx={idx}
               />
             )
@@ -299,6 +356,7 @@ const Compose = () => {
                 {...component.props}
                 translateX={translate.x}
                 translateY={translate.y}
+                globalZoom={zoom}
                 idx={idx}
               />
             )
@@ -320,12 +378,15 @@ const Compose = () => {
 export default Compose
 
 const InfiniteVoicingAssistant = props => {
+  let zoom = props.zoom + props.globalZoom
+  if (zoom < -1) zoom = -1
   return (
     <iframe
       style={{
         position: "fixed",
         top: props.y + props.translateY - 150,
         left: props.x + props.translateX,
+        transform: `scale(${zoom})`,
         minWidth: 500,
         minHeight: 600,
       }}
@@ -336,12 +397,15 @@ const InfiniteVoicingAssistant = props => {
 }
 
 const InfiniteYoutube = props => {
+  let zoom = props.zoom + props.globalZoom
+  if (zoom < -1) zoom = -1
   return (
     <Youtube
       style={{
         position: "fixed",
         top: props.y + props.translateY - 100,
         left: props.x + props.translateX,
+        transform: `scale(${zoom})`,
       }}
       src={props.src}
       id={`youtube-${props.idx}`}
@@ -350,12 +414,16 @@ const InfiniteYoutube = props => {
 }
 
 const InfiniteVexflow = props => {
+  let zoom = props.zoom + props.globalZoom
+  if (zoom < -1) zoom = -1
+
   return (
     <Vexflow
       style={{
         position: "fixed",
         top: props.y + props.translateY - 75,
         left: props.x + props.translateX,
+        transform: `scale(${zoom})`,
       }}
       name={`vex-${props.idx}`}
       easyscore={"G#4/w"}
@@ -364,12 +432,16 @@ const InfiniteVexflow = props => {
 }
 
 const MyP = props => {
+  let zoom = props.zoom + props.globalZoom
+  if (zoom < -1) zoom = -1
+
   return (
     <MyTextField
       style={{
         position: "fixed",
         top: props.y + props.translateY,
         left: props.x + props.translateX,
+        transform: `scale(${zoom})`,
         border: "1px solid #ededed",
         minHeight: "30px",
         minWidth: "70px",

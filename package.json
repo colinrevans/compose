@@ -21,6 +21,7 @@
     "gatsby-transformer-sharp": "^2.2.4",
     "invariant": "^2.2.4",
     "is-empty": "^1.2.0",
+    "keycode": "^2.2.0",
     "prop-types": "^15.7.2",
     "ramda": "^0.26.1",
     "react": "^16.8.6",
