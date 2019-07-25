@@ -10,9 +10,9 @@ const IndexPage = ({ data }) => {
   return (
     <Layout>
       <SEO title="Home" />
-      <Link to="text-memorizer">text-memorizer</Link>
+      <Link to="/text-memorizer">text-memorizer</Link>
       <br />
-      <Link to="compose">compose</Link>
+      <Link to="/compose">compose</Link>
       <br />
       {posts.map(({ node: post }) => (
         <>

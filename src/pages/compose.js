@@ -2,6 +2,7 @@ import React, { useEffect, useState, useCallback, useRef } from "react"
 import { Link } from "gatsby"
 import { Vexflow } from "../components/vexflow-components.js"
 import Button from "@material-ui/core/Button"
+import { equals } from "ramda"
 import { Spotify, Youtube } from "../components/embeds"
 import empty from "is-empty"
 
@@ -10,138 +11,43 @@ const Compose = () => {
   const [translate, setTranslate] = useState({ x: 0, y: 0 })
   const [elements, setElements] = useState([])
 
-  useEffect(() => {
-    window.addEventListener("keydown", onKeyDown, true)
-    window.addEventListener("mousemove", onMouseMove, true)
+  {
+    /* FUNCTIONS FOR COMMANDS */
+  }
 
-    return () => {
-      window.removeEventListener("keydown", onKeyDown, true)
-      window.removeEventListener("mousemove", onMouseMove, true)
-    }
-  }, [onKeyDown, onMouseMove, mouse, translate, elements])
+  const createTextField = () => {
+    setElements(elements => [
+      ...elements,
+      {
+        component: (
+          <p x={mouse.x} y={mouse.y}>
+            boo
+          </p>
+        ),
+        type: "textarea",
+      },
+    ])
+  }
 
-  const onKeyDown = useCallback(
-    e => {
-      if ([38, 39, 37, 40].includes(e.keyCode)) e.preventDefault()
-      // SHIFT SPACE
-      if (e.keyCode === 32 && e.shiftKey) {
-        setElements(elements => [
-          ...elements,
-          {
-            component: (
-              <p x={mouse.x} y={mouse.y}>
-                boo
-              </p>
-            ),
-            type: "textarea",
-          },
-        ])
+  const createVexflow = () => {
+    setElements(elements => [
+      ...elements,
+      {
+        component: <Vexflow x={mouse.x} y={mouse.y} />,
+        type: "vexflow",
+      },
+    ])
+  }
 
-        e.preventDefault()
-      }
-      // SHIFT V
-      if (e.keyCode === 86 && e.shiftKey) {
-        setElements(elements => [
-          ...elements,
-          {
-            component: <Vexflow x={mouse.x} y={mouse.y} />,
-            type: "vexflow",
-          },
-        ])
-        e.preventDefault()
-        document.activeElement.blur()
-      }
-      // SHIFT X
-      if (e.keyCode === 88 && e.shiftKey) {
-        setElements(elements => elements.slice(0, elements.length - 1))
-        e.preventDefault()
-      }
-      // SHIFT Y
-      if (e.keyCode === 89 && e.shiftKey) {
-        setElements(elements => [
-          ...elements,
-          {
-            component: <Youtube src={"1234"} x={mouse.x} y={mouse.y} />,
-            type: "youtube",
-          },
-        ])
-        e.preventDefault()
-        document.activeElement.blur()
-      }
-      // SHIFT I
-      if (e.keyCode === 73 && e.shiftKey) {
-        setElements(elements => [
-          ...elements,
-          {
-            component: (
-              <iframe
-                src="https://musicianlookup.netlify.com/voicing-assistant"
-                x={mouse.x}
-                y={mouse.y}
-              />
-            ),
-            type: "voicing-assistant",
-          },
-        ])
-        e.preventDefault()
-        document.activeElement.blur()
-      }
-      if (e.keyCode === 76 && e.shiftKey) {
-        setElements(elements => [
-          ...elements,
-          {
-            component: (
-              <iframe
-                src="https://musicianlookup.netlify.com/lookup"
-                x={mouse.x}
-                y={mouse.y}
-              />
-            ),
-            type: "voicing-assistant",
-          },
-        ])
-        e.preventDefault()
-        document.activeElement.blur()
-      }
-      if (e.keyCode === 87 && e.shiftKey) {
-        navigateUp()
-        e.preventDefault
-        document.activeElement.blur()
-      }
-      if (e.keyCode === 65 && e.shiftKey) {
-        navigateLeft()
-        e.preventDefault
-        document.activeElement.blur()
-      }
-      if (e.keyCode === 83 && e.shiftKey) {
-        navigateDown()
-        e.preventDefault
-        document.activeElement.blur()
-      }
-      if (e.keyCode === 68 && e.shiftKey) {
-        navigateRight()
-        e.preventDefault
-        document.activeElement.blur()
-      }
-      if (e.keyCode === 27) document.activeElement.blur()
-      if (e.keyCode === 38)
-        setTranslate(translate => ({ ...translate, y: translate.y + 150 }))
-      if (e.keyCode === 40)
-        setTranslate(translate => ({ ...translate, y: translate.y - 150 }))
-      if (e.keyCode === 39)
-        setTranslate(translate => ({ ...translate, x: translate.x - 150 }))
-      if (e.keyCode === 37)
-        setTranslate(translate => ({ ...translate, x: translate.x + 150 }))
-    },
-    [mouse]
-  )
-
-  const onMouseMove = useCallback(
-    ({ x, y }) => {
-      setMouse({ x: x - translate.x, y: y - translate.y })
-    },
-    [mouse, translate]
-  )
+  const createYoutube = () => {
+    setElements(elements => [
+      ...elements,
+      {
+        component: <Youtube src={"1234"} x={mouse.x} y={mouse.y} />,
+        type: "youtube",
+      },
+    ])
+  }
 
   const navigateRight = useCallback(() => {
     setTranslate(translate => ({
@@ -171,6 +77,82 @@ const Compose = () => {
     }))
   }, [])
 
+  {
+    /* COMMANDS */
+  }
+
+  // prettier-ignore
+  const commands = {
+    'navigate left': { fn: navigateLeft, keys: [16, 65], mode: 'noedit' },
+    'navigate right': { fn: navigateRight, keys: [16, 68], mode: 'noedit' },
+    'navigate up': { fn: navigateUp, keys: [16, 87], mode: 'noedit' },
+    'navigate down': { fn: navigateDown, keys: [16, 83], mode: 'noedit' },
+    'clear': { fn: (() => setElements([])), keys: [16, 67],  mode: 'noedit'},
+    'delete last': { fn: () => setElements(elements => elements.slice(0, elements.length - 1)),
+                     keys: [16, 88], mode: 'noedit'},
+    'create text field': { fn: createTextField, keys: [16, 32],  mode: 'any'},
+    'create score': { fn: createVexflow, keys: [16, 86],  mode: 'any'},
+    'create youtube embed': { fn: createYoutube, keys: [16, 89],  mode: 'any'},
+    'enter command': { fn: (() => alert('show command window')), keys: [32], mode: 'noedit'},
+    'move left': { fn: (() => setTranslate(translate => ({ ...translate, x: translate.y + 150}))),
+                   keys: [37], mode: 'noedit'},
+    'move up': { fn: (() => setTranslate(translate => ({ ...translate, y: translate.y - 150 }))),
+                 keys: [38], mode: 'noedit'},
+    'move right': { fn: (() => setTranslate(translate => ({ ...translate, x: translate.x - 150 }))),
+                    keys: [39], mode: 'noedit'},
+    'move down': { fn: (() => setTranslate(translate => ({ ...translate, x: translate.x + 150 }))),
+                   keys: [40], mode: 'noedit'},
+    'unfocus all': { fn: (() => document.activeElement.blur()), keys: [27], mode: 'any'}
+
+  }
+
+  useEffect(() => {
+    window.addEventListener("keydown", onKeyDown, true)
+    window.addEventListener("mousemove", onMouseMove, true)
+
+    return () => {
+      window.removeEventListener("keydown", onKeyDown, true)
+      window.removeEventListener("mousemove", onMouseMove, true)
+    }
+  }, [onKeyDown, onMouseMove, mouse, translate, elements])
+
+  {
+    /* EVENT HANDLERS */
+  }
+
+  const onKeyDown = useCallback(
+    e => {
+      // if e.keyCode matches a keyCode from the commands list
+      // && we are in the right mode
+      // execute that command's function
+      let mode =
+        document.activeElement.tagName !== "TEXTAREA" ? "noedit" : "edit"
+      let keys = [e.keyCode]
+      if (e.shiftKey) keys.push(16)
+
+      for (let key of Object.keys(commands)) {
+        let command = commands[key]
+        if (equals(new Set(keys), new Set(command.keys)))
+          if (command.mode === "any" || command.mode === mode) {
+            command.fn()
+            e.preventDefault()
+            document.activeElement.blur()
+          }
+      }
+    },
+    [mouse, commands]
+  )
+
+  const onMouseMove = useCallback(
+    ({ x, y }) => {
+      setMouse({ x: x - translate.x, y: y - translate.y })
+    },
+    [mouse, translate]
+  )
+
+  {
+    /* RENDER */
+  }
   return (
     <div style={{ overflowX: "hidden", overflowY: "hidden" }}>
       <h1
@@ -198,12 +180,19 @@ const Compose = () => {
       </span>
       {/* CLEAR */}
       <Button
-        style={{ position: "fixed", bottom: 20, left: 20 }}
+        style={{ position: "fixed", bottom: 20, left: 20, color: "grey" }}
         onClick={() => {
           setElements([])
         }}
       >
         clear
+      </Button>
+      {/* TO ORIGIN */}
+      <Button
+        style={{ position: "fixed", bottom: 20, left: 120, color: "grey" }}
+        onClick={() => setTranslate({ x: 0, y: 0 })}
+      >
+        origin
       </Button>
 
       {/* NAVIGATION */}
@@ -418,7 +407,9 @@ const MyTextField = props => {
         {...props}
         style={{
           ...props.style,
-          border: `1px solid ${empty(text) || hovering ? "grey" : "white"}`,
+          border: `1px solid ${
+            empty(text) ? "grey" : hovering ? "#ededed" : "white"
+          }`,
           fontSize: "80%",
           lineHeight: "120%",
           fontFamily: "georgia",
