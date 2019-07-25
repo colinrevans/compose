@@ -12,6 +12,7 @@ const IndexPage = ({ data }) => {
       <SEO title="Home" />
       <Link to="text-memorizer">text-memorizer</Link>
       <br />
+      <Link to="compose">compose</Link>
       <br />
       {posts.map(({ node: post }) => (
         <>

@@ -10,7 +10,7 @@ const Loader = props => {
 export const Youtube = props => {
   let src = "https://youtube.com/embed/" + props.src
   return (
-    <div>
+    <div style={{ ...props.style }}>
       <iframe
         title={props.src}
         id="ytplayer"
@@ -34,7 +34,7 @@ export const Spotify = props => {
       .substr(1)
   let url = "https://open.spotify.com/embed/" + trackOrAlbum + "/" + src
   return (
-    <div>
+    <div style={{ ...props.style }}>
       <iframe
         title={props.src || props.uri}
         src={url}
