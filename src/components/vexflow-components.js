@@ -103,7 +103,7 @@ export const Vexflow = props => {
     width = props.width,
     height = props.height
   ) => {
-    const VF = Vex.Flow
+    const VF = require("vexflow").Flow
     let vf = new VF.Factory({
       renderer: { elementId: id, width: width, height: height },
     })
