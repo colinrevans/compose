@@ -10,7 +10,7 @@ import empty from "is-empty"
 const Compose = () => {
   const [mouse, setMouse] = useState({ x: 100, y: 100 })
   const [translate, setTranslate] = useState({ x: 0, y: 0 })
-  const [zoom, setZoom] = useState(0.5)
+  const [zoom, setZoom] = useState({ scale: 1 })
   const [elements, setElements] = useState([])
   const [showHelp, setShowHelp] = useState(false)
 
@@ -18,36 +18,14 @@ const Compose = () => {
     /* FUNCTIONS FOR COMMANDS */
   }
 
-  const createTextField = () => {
+  const createElement = type => {
     setElements(elements => [
       ...elements,
       {
-        component: (
-          <p x={mouse.x} y={mouse.y} zoom={zoom}>
-            boo
-          </p>
-        ),
-        type: "textarea",
-      },
-    ])
-  }
-
-  const createVexflow = () => {
-    setElements(elements => [
-      ...elements,
-      {
-        component: <Vexflow x={mouse.x} y={mouse.y} zoom={zoom} />,
-        type: "vexflow",
-      },
-    ])
-  }
-
-  const createYoutube = () => {
-    setElements(elements => [
-      ...elements,
-      {
-        component: <Youtube src={"1234"} x={mouse.x} y={mouse.y} zoom={zoom} />,
-        type: "youtube",
+        type,
+        x: mouse.x,
+        y: mouse.y,
+        scaleDuringCreation: zoom.scale,
       },
     ])
   }
@@ -55,30 +33,39 @@ const Compose = () => {
   const navigateRight = useCallback(() => {
     setTranslate(translate => ({
       ...translate,
-      x: translate.x - window.innerWidth,
+      x: translate.x - window.innerWidth / zoom.scale,
     }))
-  }, [])
+  }, [zoom])
 
   const navigateLeft = useCallback(() => {
     setTranslate(translate => ({
       ...translate,
-      x: translate.x + window.innerWidth,
+      x: translate.x + window.innerWidth / zoom.scale,
     }))
-  }, [])
+  }, [zoom])
 
   const navigateDown = useCallback(() => {
     setTranslate(translate => ({
       ...translate,
-      y: translate.y - window.innerHeight,
+      y: translate.y - window.innerHeight / zoom.scale,
     }))
-  }, [])
+  }, [zoom])
 
   const navigateUp = useCallback(() => {
     setTranslate(translate => ({
       ...translate,
-      y: translate.y + window.innerHeight,
+      y: translate.y + window.innerHeight / zoom.scale,
     }))
-  }, [])
+  }, [zoom])
+
+  const zoomIn = () =>
+    setZoom(zoom => ({
+      scale: zoom.scale + 0.5 * zoom.scale,
+    }))
+  const zoomOut = () =>
+    setZoom(zoom => ({
+      scale: zoom.scale - 0.5 * zoom.scale,
+    }))
 
   {
     /* COMMANDS */
@@ -90,21 +77,24 @@ const Compose = () => {
     'navigate right': { fn: navigateRight, keys: [16, 68], mode: 'noedit' },
     'navigate up': { fn: navigateUp, keys: [16, 87], mode: 'noedit' },
     'navigate down': { fn: navigateDown, keys: [16, 83], mode: 'noedit' },
+    'zoom in': { fn: zoomIn, keys: [73, 16], mode: 'any' },
+    'zoom out': { fn: zoomOut, keys: [79, 16], mode: 'any' },
     'clear': { fn: (() => setElements([])), keys: [16, 67],  mode: 'noedit'},
     'delete last': { fn: () => setElements(elements => elements.slice(0, elements.length - 1)),
                      keys: [16, 88], mode: 'noedit'},
-    'create text field': { fn: createTextField, keys: [16, 32],  mode: 'any'},
-    'create score': { fn: createVexflow, keys: [16, 86],  mode: 'any'},
-    'create youtube embed': { fn: createYoutube, keys: [16, 89],  mode: 'any'},
+    'create text field': { fn: (() => createElement('textfield')), keys: [16, 32],  mode: 'any'},
+    'create score': { fn: (() => createElement('vexflow')), keys: [16, 86],  mode: 'any'},
+    'create youtube embed': { fn: (() => createElement('youtube')), keys: [16, 89],  mode: 'any'},
+    'create title': { fn: (() => createElement('title')), keys: [16, 84], mode: 'any'},
     'show help': { fn: (() => setShowHelp(prev => !prev)), keys: [16, 191], mode: 'noedit'},
-    'move left': { fn: (() => setTranslate(cur => ({ ...cur, x: cur.x + 150}))),
-                   keys: [37], mode: 'noedit'},
-    'move up': { fn: (() => setTranslate(cur => ({ ...cur, y: cur.y + 150 }))),
-                 keys: [38], mode: 'noedit'},
-    'move right': { fn: (() => setTranslate(cur => ({ ...cur, x: cur.x - 150 }))),
-                    keys: [39], mode: 'noedit'},
-    'move down': { fn: (() => setTranslate(cur => ({ ...cur, y: cur.y - 150 }))),
-                   keys: [40], mode: 'noedit'},
+    'move left': { fn: (() => setTranslate(cur => ({ ...cur, x: cur.x + 150 / zoom.scale}))),
+                   keys: [65], mode: 'noedit'},
+    'move up': { fn: (() => setTranslate(cur => ({ ...cur, y: cur.y + 150 / zoom.scale}))),
+                 keys: [87], mode: 'noedit'},
+    'move right': { fn: (() => setTranslate(cur => ({ ...cur, x: cur.x - 150 / zoom.scale}))),
+                    keys: [68], mode: 'noedit'},
+    'move down': { fn: (() => setTranslate(cur => ({ ...cur, y: cur.y - 150 / zoom.scale}))),
+                   keys: [83], mode: 'noedit'},
     'unfocus all': { fn: (() => document.activeElement.blur()), keys: [27], mode: 'any'}
 
   }
@@ -138,9 +128,18 @@ const Compose = () => {
 
   const onMouseMove = useCallback(
     ({ x, y }) => {
-      setMouse({ x: x - translate.x, y: y - translate.y })
+      setMouse({
+        x:
+          (x - window.innerWidth / 2) / zoom.scale +
+          window.innerWidth / 2 -
+          translate.x,
+        y:
+          (y - window.innerHeight / 2) / zoom.scale +
+          window.innerHeight / 2 -
+          translate.y,
+      })
     },
-    [mouse, translate]
+    [mouse, translate, zoom]
   )
 
   useEffect(() => {
@@ -163,8 +162,8 @@ const Compose = () => {
       onWheel={e => {
         e.preventDefault()
         e.stopPropagation()
-        let dx = e.deltaX
-        let dy = e.deltaY
+        let dx = e.deltaX / zoom.scale
+        let dy = e.deltaY / zoom.scale
         setTranslate(translate => ({
           x: translate.x - dx,
           y: translate.y - dy,
@@ -172,6 +171,17 @@ const Compose = () => {
       }}
       style={{ overflowX: "hidden", overflowY: "hidden" }}
     >
+      <div
+        style={{
+          width: 1,
+          height: 1,
+          backgroundColor: "black",
+          color: "black",
+          position: "fixed",
+          left: "calc(50vw)",
+          top: "calc(50vh)",
+        }}
+      />
       <h1
         style={{
           position: "fixed",
@@ -193,7 +203,7 @@ const Compose = () => {
           fontFamily: "sans-serif",
         }}
       >
-        ({-1 * translate.x}, {-1 * translate.y}) {zoom}
+        ({-1 * translate.x}, {-1 * translate.y}) x{zoom.scale}
       </span>
       {/* CLEAR */}
       <Button
@@ -222,30 +232,6 @@ const Compose = () => {
         onClick={() => setTranslate({ x: 0, y: 0 })}
       >
         origin
-      </Button>
-      <Button
-        style={{
-          position: "fixed",
-          bottom: 20,
-          left: 220,
-          color: "grey",
-          zIndex: 14,
-        }}
-        onClick={() => setZoom(prev => prev + 0.2)}
-      >
-        zoom in
-      </Button>
-      <Button
-        style={{
-          position: "fixed",
-          bottom: 20,
-          left: 320,
-          color: "grey",
-          zIndex: 14,
-        }}
-        onClick={() => setZoom(prev => prev - 0.2)}
-      >
-        zoom out
       </Button>
 
       {/* NAVIGATION */}
@@ -331,13 +317,19 @@ const Compose = () => {
           height: "100vh",
         }}
       >
-        {elements.map(({ component, type }, idx) => {
+        {elements.map(({ x, y, scaleDuringCreation: scale, type }, idx) => {
           if (type === "textarea")
+            return <MyP x={x} y={y} globalZoom={zoom} idx={idx} />
+          if (type === "title")
             return (
               <MyP
-                {...component.props}
-                translateX={translate.x}
-                translateY={translate.y}
+                style={{
+                  fontSize: "130%",
+                  fontFamily: "helvetica",
+                }}
+                x={x}
+                y={y}
+                scale={scale}
                 globalZoom={zoom}
                 idx={idx}
               />
@@ -345,19 +337,20 @@ const Compose = () => {
           if (type === "vexflow")
             return (
               <InfiniteVexflow
-                {...component.props}
-                translateX={translate.x}
-                translateY={translate.y}
+                x={x}
+                y={y}
+                scale={scale}
                 globalZoom={zoom}
                 idx={idx}
+                globalTranslate={translate}
               />
             )
           if (type === "youtube")
             return (
               <InfiniteYoutube
-                {...component.props}
-                translateX={translate.x}
-                translateY={translate.y}
+                x={x}
+                y={y}
+                scale={scale}
                 globalZoom={zoom}
                 idx={idx}
               />
@@ -365,9 +358,10 @@ const Compose = () => {
           if (type === "voicing-assistant")
             return (
               <InfiniteVoicingAssistant
-                {...component.props}
-                translateX={translate.x}
-                translateY={translate.y}
+                x={x}
+                y={y}
+                scale={scale}
+                globalZoom={zoom}
                 idx={idx}
               />
             )
@@ -380,7 +374,7 @@ const Compose = () => {
 export default Compose
 
 const InfiniteVoicingAssistant = props => {
-  let zoom = props.zoom + props.globalZoom
+  let zoom = props.zoom + props.globalZoom.scale
   if (zoom < -1) zoom = -1
   return (
     <iframe
@@ -415,19 +409,29 @@ const InfiniteYoutube = props => {
   )
 }
 
-const InfiniteVexflow = props => {
-  let zoom = props.zoom + props.globalZoom
-  if (zoom < -1) zoom = -1
+const InfiniteVexflow = ({ globalZoom, scale, globalTranslate, x, y, idx }) => {
+  let scaledX = globalZoom.scale * x
+  let scaledY = globalZoom.scale * y
+  let scaledTopLeftX = globalZoom.scale * globalTranslate.x * -1
+  let scaledTopLeftY = globalZoom.scale * globalTranslate.y * -1
+  let viewportCenterX =
+    scaledTopLeftX + Math.floor(window.innerWidth / 2) * globalZoom.scale
+  let viewportCenterY =
+    scaledTopLeftY + Math.floor(window.innerHeight / 2) * globalZoom.scale
+  let newDiffXFromCenter = scaledX - viewportCenterX
+  let newDiffYFromCenter = scaledY - viewportCenterY
+  let viewportX = newDiffXFromCenter + window.innerWidth / 2
+  let viewportY = newDiffYFromCenter + window.innerHeight / 2
 
   return (
     <Vexflow
       style={{
         position: "fixed",
-        top: props.y + props.translateY - 75,
-        left: props.x + props.translateX,
-        transform: `scale(${zoom})`,
+        top: viewportY - 75,
+        left: viewportX - 150,
+        transform: `scale(${globalZoom.scale / scale})`,
       }}
-      name={`vex-${props.idx}`}
+      name={`vex-${idx}`}
       easyscore={"G#4/w"}
     />
   )
@@ -440,6 +444,7 @@ const MyP = props => {
   return (
     <MyTextField
       style={{
+        ...props.style,
         position: "fixed",
         top: props.y + props.translateY,
         left: props.x + props.translateX,
@@ -480,13 +485,13 @@ const MyTextField = props => {
       <textarea
         {...props}
         style={{
+          fontSize: "80%",
+          fontFamily: "georgia",
           ...props.style,
           border: `1px solid ${
             empty(text) ? "grey" : hovering ? "#ededed" : "white"
           }`,
-          fontSize: "80%",
           lineHeight: "120%",
-          fontFamily: "georgia",
           zIndex: 1,
         }}
         id={`textarea-${props.idx}`}
