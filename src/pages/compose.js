@@ -24,15 +24,15 @@ const Compose = () => {
     /* FUNCTIONS FOR COMMANDS */
   }
 
-  const createElement = type => {
+  const createElement = component => {
     setElements(elements => [
       ...elements,
       {
-        type,
         x: mouse.x,
         y: mouse.y,
         scaleDuringCreation: zoom.scale,
         id: idCount,
+        component,
       },
     ])
     idCount += 1
@@ -90,9 +90,9 @@ const Compose = () => {
     'clear': { fn: (() => setElements([])), keys: [16, 67],  mode: 'noedit'},
     'delete last': { fn: () => setElements(elements => elements.slice(0, elements.length - 1)),
                      keys: [16, 88], mode: 'noedit'},
-    'create text field': { fn: (() => createElement('textarea')), keys: [16, 32],  mode: 'any'},
-    'create score': { fn: (() => createElement('vexflow')), keys: [16, 86],  mode: 'any'},
-    'create youtube embed': { fn: (() => createElement('youtube')), keys: [16, 89],  mode: 'any'},
+    'create text field': { fn: (() => createElement(InfiniteTextArea)), keys: [16, 32],  mode: 'any'},
+    'create score': { fn: (() => createElement(InfiniteVexflow)), keys: [16, 86],  mode: 'any'},
+    'create youtube embed': { fn: (() => createElement(InfiniteYoutube)), keys: [16, 89],  mode: 'any'},
     'show help': { fn: (() => setShowHelp(prev => !prev)), keys: [16, 191], mode: 'noedit'},
     'move left': { fn: (() => setTranslate(cur => ({ ...cur, x: cur.x + 150 / zoom.scale}))),
                    keys: [65], mode: 'noedit'},
@@ -326,54 +326,19 @@ const Compose = () => {
             height: "100vh",
           }}
         >
-          {elements.map(({ x, y, scaleDuringCreation: scale, type, id }) => (
-            <ComposeContext.Consumer>
-              {context =>
-                (() => {
-                  if (type === "textarea")
-                    return (
-                      <MyP
-                        x={x}
-                        y={y}
-                        context={context}
-                        scale={scale}
-                        id={id}
-                      />
-                    )
-                  if (type === "vexflow")
-                    return (
-                      <InfiniteVexflow
-                        x={x}
-                        y={y}
-                        scale={scale}
-                        context={context}
-                        id={id}
-                      />
-                    )
-                  if (type === "youtube")
-                    return (
-                      <InfiniteYoutube
-                        x={x}
-                        y={y}
-                        scale={scale}
-                        id={id}
-                        context={context}
-                      />
-                    )
-                  if (type === "voicing-assistant")
-                    return (
-                      <InfiniteVoicingAssistant
-                        x={x}
-                        y={y}
-                        scale={scale}
-                        context={context}
-                        id={id}
-                      />
-                    )
-                })()
-              }
-            </ComposeContext.Consumer>
-          ))}
+          {elements.map(
+            ({ x, y, scaleDuringCreation: scale, component, type, id }) => (
+              <ComposeContext.Consumer key={`consumer-${id}`}>
+                {context =>
+                  React.createElement(
+                    component,
+                    { x, y, context, scale, id },
+                    null
+                  )
+                }
+              </ComposeContext.Consumer>
+            )
+          )}
         </div>
       </div>
     </ComposeContext.Provider>
@@ -401,19 +366,24 @@ const InfiniteVoicingAssistant = props => {
   )
 }
 
-const InfiniteYoutube = props => {
-  let zoom = props.zoom + props.globalZoom
-  if (zoom < -1) zoom = -1
+const InfiniteYoutube = ({ context, scale, x, y, id, src }) => {
+  const { viewportX, viewportY } = getViewportCoordinates(
+    x,
+    y,
+    context.translate,
+    context.zoom
+  )
+
   return (
     <Youtube
       style={{
         position: "fixed",
-        top: props.y + props.translateY - 100,
-        left: props.x + props.translateX,
-        transform: `scale(${zoom})`,
+        top: viewportY - 100,
+        left: viewportX - 150,
+        transform: `scale(${context.zoom.scale / scale})`,
       }}
-      src={props.src}
-      id={`youtube-${props.idx}`}
+      src={src}
+      id={`youtube-${id}`}
     />
   )
 }
@@ -486,7 +456,7 @@ const InfiniteVexflow = ({ context, scale, x, y, id }) => {
   )
 }
 
-const MyP = props => {
+const InfiniteTextArea = props => {
   const { viewportX, viewportY } = getViewportCoordinates(
     props.x,
     props.y,
