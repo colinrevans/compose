@@ -322,9 +322,9 @@ const Compose = () => {
               style={{
                 position: "fixed",
                 backgroundColor: "white",
-                right: "calc(50vw - 175px)",
+                right: "calc(50vw - 200px)",
                 top: "10vh",
-                width: 350,
+                width: 400,
                 height: "80vh",
                 overflow: "hidden",
                 color: "grey",
@@ -335,10 +335,9 @@ const Compose = () => {
                 zIndex: 2,
               }}
             >
-              <p style={{ padding: 30 }}>
-                keys
-                <br />
-                <br />
+              <p style={{ padding: 30, textTransform: "capitalize" }}>
+                Keyboard Shortcuts
+                <hr />
                 {Object.keys(commands).map(commandName => {
                   let command = commands[commandName]
                   return (
@@ -346,9 +345,9 @@ const Compose = () => {
                       <span style={{ float: "left" }}>{commandName}: </span>
                       <span style={{ marginLeft: "80px" }}> </span>
                       <span style={{ float: "right" }}>
-                        {command.keys.map(
-                          keyCode => keycode(keyCode).toUpperCase() + " "
-                        )}
+                        {command.keys
+                          .map(key => keycode(key).toUpperCase())
+                          .reduce((a, b) => a + " + " + b)}
                       </span>
                       <br />
                     </>
