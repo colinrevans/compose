@@ -19,6 +19,8 @@ const Compose = () => {
   const [zoom, setZoom] = useState({ scale: 1 })
   const [elements, setElements] = useState([])
   const [showHelp, setShowHelp] = useState(false)
+  // 1 is zoom in, -1 is zoom out, 0 is reg
+  const [zoomMode, setZoomMode] = useState(0)
 
   {
     /* FUNCTIONS FOR COMMANDS */
@@ -30,7 +32,7 @@ const Compose = () => {
       {
         x: mouse.x,
         y: mouse.y,
-        scaleDuringCreation: zoom.scale,
+        scale: zoom.scale,
         id: idCount,
         component,
       },
@@ -85,14 +87,12 @@ const Compose = () => {
     'navigate right': { fn: navigateRight, keys: [16, 68], mode: 'noedit' },
     'navigate up': { fn: navigateUp, keys: [16, 87], mode: 'noedit' },
     'navigate down': { fn: navigateDown, keys: [16, 83], mode: 'noedit' },
-    'zoom in': { fn: zoomIn, keys: [73, 16], mode: 'noedit' },
-    'zoom out': { fn: zoomOut, keys: [79, 16], mode: 'noedit' },
     'clear': { fn: (() => setElements([])), keys: [16, 67],  mode: 'noedit'},
     'delete last': { fn: () => setElements(elements => elements.slice(0, elements.length - 1)),
                      keys: [16, 88], mode: 'noedit'},
-    'create text field': { fn: (() => createElement(InfiniteTextArea)), keys: [16, 32],  mode: 'any'},
-    'create score': { fn: (() => createElement(InfiniteVexflow)), keys: [16, 86],  mode: 'any'},
-    'create youtube embed': { fn: (() => createElement(InfiniteYoutube)), keys: [16, 89],  mode: 'any'},
+    'create text field': { fn: (() => createElement(InfiniteTextArea)), keys: [16, 32],  mode: 'noedit'},
+    'create score': { fn: (() => createElement(InfiniteVexflow)), keys: [16, 86],  mode: 'noedit'},
+    'create youtube embed': { fn: (() => createElement(InfiniteYoutube)), keys: [16, 89],  mode: 'noedit'},
     'show help': { fn: (() => setShowHelp(prev => !prev)), keys: [16, 191], mode: 'noedit'},
     'move left': { fn: (() => setTranslate(cur => ({ ...cur, x: cur.x + 150 / zoom.scale}))),
                    keys: [65], mode: 'noedit'},
@@ -102,8 +102,9 @@ const Compose = () => {
                     keys: [68], mode: 'noedit'},
     'move down': { fn: (() => setTranslate(cur => ({ ...cur, y: cur.y - 150 / zoom.scale}))),
                    keys: [83], mode: 'noedit'},
-    'unfocus all': { fn: (() => document.activeElement.blur()), keys: [27], mode: 'any'}
-
+    'unfocus all': { fn: (() => document.activeElement.blur()), keys: [27], mode: 'any'},
+    'zoom in mode': { fn: (() => setZoomMode(zm => zm !== 1 ? 1 : 0)), keys: [90], mode: 'noedit'},
+    'zoom out mode': { fn: (() => setZoomMode(zm => zm !== -1 ? -1 : 0)), keys: [16, 90], mode: 'noedit'}
   }
 
   {
@@ -119,6 +120,9 @@ const Compose = () => {
         document.activeElement.tagName !== "TEXTAREA" ? "noedit" : "edit"
       let keys = [e.keyCode]
       if (e.shiftKey) keys.push(16)
+
+      // let's get out of zoom mode if we're in it and it's not a zoom event
+      if (!keys.includes(90)) setZoomMode(0)
 
       for (let key of Object.keys(commands)) {
         let command = commands[key]
@@ -165,7 +169,9 @@ const Compose = () => {
     /* RENDER */
   }
   return (
-    <ComposeContext.Provider value={{ zoom, translate, elements, setElements }}>
+    <ComposeContext.Provider
+      value={{ zoom, translate, elements, setElements, zoomMode }}
+    >
       <div
         onWheel={e => {
           e.preventDefault()
@@ -177,7 +183,20 @@ const Compose = () => {
             y: translate.y - dy,
           }))
         }}
-        style={{ overflowX: "hidden", overflowY: "hidden" }}
+        onClick={e => {
+          if (zoomMode === 1) zoomIn()
+          if (zoomMode === -1) zoomOut()
+          if (zoomMode !== 0) e.preventDefault()
+        }}
+        style={{
+          overflowX: "hidden",
+          overflowY: "hidden",
+          cursor: (() => {
+            if (zoomMode === 1) return "zoom-in"
+            if (zoomMode === 0) return "default"
+            if (zoomMode === -1) return "zoom-out"
+          })(),
+        }}
       >
         <div
           style={{
@@ -326,19 +345,17 @@ const Compose = () => {
             height: "100vh",
           }}
         >
-          {elements.map(
-            ({ x, y, scaleDuringCreation: scale, component, type, id }) => (
-              <ComposeContext.Consumer key={`consumer-${id}`}>
-                {context =>
-                  React.createElement(
-                    component,
-                    { x, y, context, scale, id },
-                    null
-                  )
-                }
-              </ComposeContext.Consumer>
-            )
-          )}
+          {elements.map(({ x, y, scale, component, id }) => (
+            <ComposeContext.Consumer key={`consumer-${id}`}>
+              {context =>
+                React.createElement(
+                  component,
+                  { x, y, context, scale, id },
+                  null
+                )
+              }
+            </ComposeContext.Consumer>
+          ))}
         </div>
       </div>
     </ComposeContext.Provider>
@@ -430,7 +447,9 @@ const InfiniteVexflow = ({ context, scale, x, y, id }) => {
         transform: `scale(${context.zoom.scale / scale})`,
         border: `${selected ? "1px dotted grey" : ""}`,
       }}
-      onClick={() => setSelected(selected => !selected)}
+      onClick={() => {
+        if (!context.zoomMode) setSelected(selected => !selected)
+      }}
     >
       {selected ? (
         <span
