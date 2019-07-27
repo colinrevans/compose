@@ -104,7 +104,8 @@ const Compose = () => {
                    keys: [83], mode: 'noedit'},
     'unfocus all': { fn: (() => document.activeElement.blur()), keys: [27], mode: 'any'},
     'zoom in mode': { fn: (() => setZoomMode(zm => zm !== 1 ? 1 : 0)), keys: [90], mode: 'noedit'},
-    'zoom out mode': { fn: (() => setZoomMode(zm => zm !== -1 ? -1 : 0)), keys: [16, 90], mode: 'noedit'}
+    'zoom out mode': { fn: (() => setZoomMode(zm => zm !== -1 ? -1 : 0)), keys: [16, 90], mode: 'noedit'},
+    'initiate zoom': { fn: (() => { if (zoomMode === 1) zoomIn(); if(zoomMode === -1)zoomOut() }), keys: [32], mode: 'noedit'}
   }
 
   {
@@ -122,7 +123,7 @@ const Compose = () => {
       if (e.shiftKey) keys.push(16)
 
       // let's get out of zoom mode if we're in it and it's not a zoom event
-      if (!keys.includes(90)) setZoomMode(0)
+      if (!keys.includes(90) && !keys.includes(32)) setZoomMode(0)
 
       for (let key of Object.keys(commands)) {
         let command = commands[key]
