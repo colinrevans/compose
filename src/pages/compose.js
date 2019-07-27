@@ -235,8 +235,7 @@ const Compose = () => {
             fontFamily: "sans-serif",
           }}
         >
-          ({Math.round(-1 * translate.x)}, {Math.round(-1 * translate.y)}) x
-          {Math.round(zoom.scale * 100) / 100}
+          ({Math.round(-1 * translate.x)}, {Math.round(-1 * translate.y)})
         </span>
         {/* CLEAR */}
         <Button
@@ -265,6 +264,18 @@ const Compose = () => {
           onClick={() => setTranslate({ x: 0, y: 0 })}
         >
           origin
+        </Button>
+        <Button
+          style={{
+            position: "fixed",
+            bottom: 20,
+            left: 220,
+            color: "grey",
+            zIndex: 14,
+          }}
+          onClick={() => setShowHelp(s => !s)}
+        >
+          help
         </Button>
 
         {/* NAVIGATION */}
