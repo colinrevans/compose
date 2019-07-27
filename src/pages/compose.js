@@ -26,12 +26,12 @@ const Compose = () => {
     /* FUNCTIONS FOR COMMANDS */
   }
 
-  const createElement = component => {
+  const createElement = (component, x = mouse.x, y = mouse.y) => {
     setElements(elements => [
       ...elements,
       {
-        x: mouse.x,
-        y: mouse.y,
+        x,
+        y,
         scale: zoom.scale,
         id: idCount,
         component,
@@ -68,6 +68,10 @@ const Compose = () => {
     }))
   }, [zoom])
 
+  const zoomAccordingToMode = () => {
+    if (zoomMode === 1) zoomIn()
+    if (zoomMode === -1) zoomOut()
+  }
   const zoomIn = () =>
     setZoom(zoom => ({
       scale: zoom.scale + 0.5 * zoom.scale,
@@ -105,7 +109,7 @@ const Compose = () => {
     'unfocus all': { fn: (() => document.activeElement.blur()), keys: [27], mode: 'any'},
     'zoom in mode': { fn: (() => setZoomMode(zm => zm !== 1 ? 1 : 0)), keys: [90], mode: 'noedit'},
     'zoom out mode': { fn: (() => setZoomMode(zm => zm !== -1 ? -1 : 0)), keys: [16, 90], mode: 'noedit'},
-    'initiate zoom': { fn: (() => { if (zoomMode === 1) zoomIn(); if(zoomMode === -1)zoomOut() }), keys: [32], mode: 'noedit'}
+    'initiate zoom': { fn: (() => zoomAccordingToMode()), keys: [32], mode: 'noedit'},
   }
 
   {
@@ -299,32 +303,60 @@ const Compose = () => {
           ↓
         </Button>
         {showHelp ? (
-          <p
-            style={{
-              position: "fixed",
-              backgroundColor: "white",
-              right: "40vw",
-              top: "10vh",
-              color: "grey",
-              fontFamily: "sans-serif",
-              fontSize: "80%",
-              zIndex: 2,
-            }}
-          >
-            keys
-            <br />
-            <br />
-            {Object.keys(commands).map(commandName => {
-              let command = commands[commandName]
-              return (
-                <>
-                  {commandName}:{" "}
-                  {command.keys.map(keyCode => keycode(keyCode) + " ")}
-                  <br />
-                </>
-              )
-            })}
-          </p>
+          <>
+            <style jsx>
+              {`
+                .container {
+                  overflow-y: scroll;
+                  scrollbar-width: none;
+                  -ms-overflow-style: none;
+                }
+                .container::-webkit-scrollbar {
+                  width: 0;
+                  height: 0;
+                }
+              `}
+            </style>
+            <div
+              className="container"
+              style={{
+                position: "fixed",
+                backgroundColor: "white",
+                right: "calc(50vw - 175px)",
+                top: "10vh",
+                width: 350,
+                height: "80vh",
+                overflow: "hidden",
+                color: "grey",
+                border: "1px dotted grey",
+                fontFamily: "sans-serif",
+                fontSize: "80%",
+                sizing: "content-box",
+                zIndex: 2,
+              }}
+            >
+              <p style={{ padding: 30 }}>
+                keys
+                <br />
+                <br />
+                {Object.keys(commands).map(commandName => {
+                  let command = commands[commandName]
+                  return (
+                    <>
+                      <span style={{ float: "left" }}>{commandName}: </span>
+                      <span style={{ marginLeft: "80px" }}> </span>
+                      <span style={{ float: "right" }}>
+                        {command.keys.map(
+                          keyCode => keycode(keyCode).toUpperCase() + " "
+                        )}
+                      </span>
+                      <br />
+                    </>
+                  )
+                })}
+              </p>
+            </div>
+          </>
         ) : null}
 
         <Link
@@ -340,8 +372,10 @@ const Compose = () => {
         >
           home
         </Link>
+
         <div
           style={{
+            overflowY: "hidden",
             width: "100vw",
             height: "100vh",
           }}
@@ -530,10 +564,21 @@ const MyTextField = props => {
     <>
       <textarea
         {...props}
+        onClick={e => {
+          if (props.context.zoomMode) {
+            e.preventDefault()
+            document.getElementById(`textarea-${props.id}`).blur()
+          }
+        }}
         style={{
           fontSize: "80%",
           fontFamily: "georgia",
           ...props.style,
+          cursor: (() => {
+            if (props.context.zoomMode === 1) return "zoom-in"
+            if (props.context.zoomMode === -1) return "zoom-out"
+            if (props.context.zoomMode === 0) return "text"
+          })(),
           border: `1px solid ${
             empty(text) ? "grey" : hovering ? "#ededed" : "white"
           }`,
