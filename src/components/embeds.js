@@ -19,6 +19,7 @@ export const Youtube = props => {
         height="200"
         src={src}
         frameBorder="0"
+        onLoad={props.onLoad ? props.onLoad : () => {}}
       />
     </div>
   )
@@ -42,7 +43,7 @@ export const Spotify = props => {
         height={props.height || "80"}
         frameBorder="0"
         allow="encrypted-media"
-        onLoad={props.passOnLoad ? props.passOnLoad : () => {}}
+        onLoad={props.onLoad ? props.onLoad : () => {}}
       />
     </div>
   )

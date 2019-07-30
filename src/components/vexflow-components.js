@@ -9,14 +9,16 @@ import styled, { keyframes } from "styled-components"
 
 const VexPlaybackButton = styled.button`
   position: absolute;
-  margin-top: 25px;
+  top: 0;
+  left: 0;
   transition: 0.2s;
-  box-shadow: 0px 1px 2px #888888;
   background-color: rgb(250, 248, 248);
+  fontsize: 80%;
   :hover {
     border-color: rgb(126, 126, 126);
     transition: 0.2s;
   }
+  transform: scale(0.7);
 `
 
 export const Vexflow = props => {
@@ -36,7 +38,7 @@ export const Vexflow = props => {
 
     if (needBassClef(props.easyscore)) {
       let [bass, treble] = splitToPianoStave(
-        dropNotesByOctaves(
+        dropNotesByeOctaves(
           props.easyscore,
           2 + Math.floor((needBassClef(props.easyscore) - 6) / 2)
         )
@@ -108,44 +110,48 @@ export const Vexflow = props => {
       renderer: { elementId: id, width: width, height: height },
     })
 
-    let score = vf.EasyScore()
-    let system = vf.System()
+    try {
+      let score = vf.EasyScore()
+      let system = vf.System()
 
-    if (needBassClef(easyscore)) {
-      let [bass, treble] = splitToPianoStave(
-        dropNotesByOctaves(
-          easyscore,
-          2 + Math.floor((needBassClef(easyscore) - 6) / 2)
+      if (needBassClef(easyscore)) {
+        let [bass, treble] = splitToPianoStave(
+          dropNotesByOctaves(
+            easyscore,
+            2 + Math.floor((needBassClef(easyscore) - 6) / 2)
+          )
         )
-      )
-      system
-        .addStave({
-          voices: [score.voice(score.notes(treble, { stem: "up" }))],
-        })
-        .addClef("treble")
+        system
+          .addStave({
+            voices: [score.voice(score.notes(treble, { stem: "up" }))],
+          })
+          .addClef("treble")
 
-      system
-        .addStave({
-          voices: [
-            score.voice(score.notes(bass, { clef: "bass", stem: "up" })),
-          ],
-        })
-        .addClef("bass")
+        system
+          .addStave({
+            voices: [
+              score.voice(score.notes(bass, { clef: "bass", stem: "up" })),
+            ],
+          })
+          .addClef("bass")
 
-      system.addConnector()
-      onTwoStave(true)
-    } else {
-      system
-        .addStave({
-          voices: [score.voice(score.notes(easyscore, { stem: "up" }))],
-        })
-        .addClef(props.overrideClef || "treble")
+        system.addConnector()
+        onTwoStave(true)
+      } else {
+        system
+          .addStave({
+            voices: [score.voice(score.notes(easyscore, { stem: "up" }))],
+          })
+          .addClef(props.overrideClef || "treble")
 
-      system.addConnector()
-      onTwoStave(false)
+        system.addConnector()
+        onTwoStave(false)
+      }
+
+      vf.draw()
+    } catch (err) {
+      console.log("vexflow error")
     }
-
-    vf.draw()
   }
 
   const removeSVGs = () => {
@@ -162,7 +168,13 @@ export const Vexflow = props => {
     <>
       <div style={{ ...props.style }} id={props.name} />
       {props.playback ? (
-        <VexPlaybackButton disabled={props.synth ? false : true} onClick={tone}>
+        <VexPlaybackButton
+          disabled={props.synth ? false : true}
+          onClick={e => {
+            e.stopPropagation()
+            tone()
+          }}
+        >
           play
         </VexPlaybackButton>
       ) : (
