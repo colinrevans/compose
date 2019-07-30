@@ -269,6 +269,9 @@ const Compose = () => {
           if (zoomMode === 1) zoomIn()
           if (zoomMode === -1) zoomOut()
           if (zoomMode !== 0) e.preventDefault()
+          setElements(elements =>
+            elements.map(elem => ({ ...elem, selected: false }))
+          )
         }}
         style={{
           overflowX: "hidden",
@@ -563,6 +566,7 @@ const InfinitePDF = ({ context, scale, x, y, id, selected, ...props }) => {
         id={`pdf-canvas-${id}`}
         onClick={e => {
           if (!context.zoomMode) {
+            e.stopPropagation()
             if (selected && !context.inspecting)
               setElementPropertyById(id, context, "selected", false)
             if (selected && context.inspecting)
@@ -631,6 +635,7 @@ const InfiniteYoutube = ({ context, scale, x, y, id, selected, ...props }) => {
             }}
             onClick={e => {
               if (!context.zoomMode) {
+                e.stopPropagation()
                 if (selected && !context.inspecting)
                   setElementPropertyById(id, context, "selected", false)
                 if (selected && context.inspecting)
@@ -650,7 +655,6 @@ const InfiniteYoutube = ({ context, scale, x, y, id, selected, ...props }) => {
             position: "fixed",
             top: 20,
             left: 20,
-            transform: `scale(${context.zoom.scale / scale})`,
           }}
           src={options.src}
           id={`youtube-${id}`}
@@ -707,6 +711,7 @@ const InfiniteVexflow = ({ context, scale, x, y, id, selected }) => {
         }}
         onClick={e => {
           if (!context.zoomMode) {
+            e.stopPropagation()
             if (selected && !context.inspecting)
               setElementPropertyById(id, context, "selected", false)
             if (selected && context.inspecting)
@@ -884,6 +889,7 @@ const InfiniteTextArea = ({ context, id, scale, selected, x, y, ...props }) => {
             return
           }
           if (!context.zoomMode) {
+            e.stopPropagation()
             if (selected && !context.inspecting)
               setElementPropertyById(id, context, "selected", false)
             if (selected && context.inspecting)
