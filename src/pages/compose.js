@@ -40,7 +40,7 @@ const Compose = () => {
   const [zoomMode, setZoomMode] = useState(0)
   // id of element that was most recently interacting with
   const [lastInteractedElemId, setLastInteractedElemId] = useState(null)
-  const [inspecting, setInspecting] = useState(true)
+  const [inspecting, setInspecting] = useState(false)
   const [synth, setSynth] = useState(null)
   const [zenMode, setZenMode] = useState(false)
 
@@ -115,6 +115,13 @@ const Compose = () => {
           createElement(InfiniteYoutube, mouse.x, mouse.y, {
             src: text.match(/=.+/)[0].substr(1),
           })
+        else {
+          let alt = [e.altKeys]
+          console.log("typeof: ", typeof test)
+          createElement(InfiniteTextArea, mouse.x, mouse.y, {
+            text,
+          })
+        }
       })
       .catch(err => console.log)
   }
@@ -138,13 +145,13 @@ const Compose = () => {
     'create pdf': { fn: (() => createElement(InfinitePDF)), keys: [16, 80], mode: 'noedit'},
     'show help': { fn: (() => setShowHelp(prev => !prev)), keys: [16, 191], mode: 'noedit'},
     'move left': { fn: (() => setTranslate(cur => ({ ...cur, x: cur.x + 150 / zoom.scale}))),
-                   keys: [65], mode: 'noedit'},
+                   keys: [65], altKeys: [72], mode: 'noedit'},
     'move up': { fn: (() => setTranslate(cur => ({ ...cur, y: cur.y + 150 / zoom.scale}))),
-                 keys: [87], mode: 'noedit'},
+                 keys: [87], altKeys: [75], mode: 'noedit'},
     'move right': { fn: (() => setTranslate(cur => ({ ...cur, x: cur.x - 150 / zoom.scale}))),
-                    keys: [68], mode: 'noedit'},
+                    keys: [68], altKeys: [76], mode: 'noedit'},
     'move down': { fn: (() => setTranslate(cur => ({ ...cur, y: cur.y - 150 / zoom.scale}))),
-                   keys: [83], mode: 'noedit'},
+                   keys: [83], altKeys: [74], mode: 'noedit'},
     'deselect all': { fn: (() => {document.activeElement.blur(); setPropertyForAll({ elements, setElements}, 'selected', false)}), keys: [27], mode: 'any'},
     'zoom in mode': { fn: (() => setZoomMode(zm => zm !== 1 ? 1 : 0)), keys: [90], mode: 'noedit'},
     'zoom out mode': { fn: (() => setZoomMode(zm => zm !== -1 ? -1 : 0)), keys: [16, 90], mode: 'noedit'},
@@ -178,7 +185,10 @@ const Compose = () => {
 
       for (let key of Object.keys(commands)) {
         let command = commands[key]
-        if (equals(new Set(keys), new Set(command.keys)))
+        if (
+          equals(new Set(keys), new Set(command.keys)) ||
+          equals(new Set(keys), new Set(command.altKeys))
+        )
           if (command.mode === "any" || command.mode === mode) {
             command.fn()
             e.preventDefault()
@@ -258,12 +268,19 @@ const Compose = () => {
         onWheel={e => {
           //e.preventDefault()
           //e.stopPropagation()
-          let dx = e.deltaX / zoom.scale
-          let dy = e.deltaY / zoom.scale
-          setTranslate(translate => ({
-            x: translate.x - dx,
-            y: translate.y - dy,
-          }))
+          if (e.shiftKey) {
+            let dy = e.deltaY
+            setZoom(z => {
+              return { ...z, scale: z.scale + dy * 0.01 * z.scale }
+            })
+          } else {
+            let dx = e.deltaX / zoom.scale
+            let dy = e.deltaY / zoom.scale
+            setTranslate(translate => ({
+              x: translate.x - dx,
+              y: translate.y - dy,
+            }))
+          }
         }}
         onClick={e => {
           if (zoomMode === 1) zoomIn()
@@ -920,7 +937,7 @@ const InfiniteTextArea = ({ context, id, scale, selected, x, y, ...props }) => {
           options={options}
           selected={selected}
           onWheel={e => {
-            e.stopPropagation()
+            if (options["distraction free"]) e.stopPropagation()
           }}
           x={x}
           y={y}
@@ -933,7 +950,6 @@ const InfiniteTextArea = ({ context, id, scale, selected, x, y, ...props }) => {
             left: options["distraction free"] && selected ? 0 : viewportX - 80,
             transform: `scale(${context.zoom.scale / (1 / options.scale)})`,
             backgroundColor: "white",
-            border: "1px solid #ededed",
             minHeight:
               options["distraction free"] && selected ? "100vh" : "100px",
             minWidth:
@@ -953,7 +969,8 @@ const InfiniteTextArea = ({ context, id, scale, selected, x, y, ...props }) => {
 }
 
 const MyTextField = props => {
-  const [text, setText] = useState("")
+  console.log(props.text)
+  const [text, setText] = useState(props.text ? props.text : "")
   const [hovering, setHovering] = useState(false)
 
   useEffect(() => {
