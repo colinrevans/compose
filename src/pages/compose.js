@@ -12,9 +12,6 @@ import { Sampler } from "tone"
 import pdfjsLib from "pdfjs-dist"
 import invariant from "invariant"
 
-// so our contenteditable p's don't add divs inside!
-document.execCommand("defaultParagraphSeparator", false, "p")
-
 // in public folder
 const SAMPLER_FILES = {
   C3: "/piano/C3.[mp3|ogg]",
@@ -222,6 +219,11 @@ const Compose = () => {
   // synth initialization
   useEffect(() => {
     initializeSynth()
+  }, [])
+
+  useEffect(() => {
+    // so our contenteditable p's don't add divs inside!
+    document.execCommand("defaultParagraphSeparator", false, "p")
   }, [])
 
   const initializeSynth = async () => {
