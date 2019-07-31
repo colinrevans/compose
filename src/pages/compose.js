@@ -11,6 +11,7 @@ import empty from "is-empty"
 import { Sampler } from "tone"
 import pdfjsLib from "pdfjs-dist"
 import invariant from "invariant"
+import "../components/layout.css"
 
 // in public folder
 const SAMPLER_FILES = {
@@ -391,13 +392,23 @@ const Compose = () => {
 
         {/* NAVIGATION */}
         <Button
-          style={{ position: "fixed", bottom: "50vh", left: 5, color: "grey" }}
+          style={{
+            position: "fixed",
+            bottom: "50vh",
+            left: 5,
+            color: "grey",
+          }}
           onClick={navigateLeft}
         >
           ⟵
         </Button>
         <Button
-          style={{ position: "fixed", bottom: "50vh", right: 5, color: "grey" }}
+          style={{
+            position: "fixed",
+            bottom: "50vh",
+            right: 5,
+            color: "grey",
+          }}
           onClick={navigateRight}
         >
           ⟶
