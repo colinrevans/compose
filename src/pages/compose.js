@@ -268,7 +268,7 @@ const Compose = () => {
       ) : null}
       <div
         onWheel={e => {
-          //e.preventDefault()
+          e.preventDefault()
           //e.stopPropagation()
           if (e.shiftKey) {
             let dy = e.deltaY
@@ -468,7 +468,9 @@ const Compose = () => {
                       <span style={{ marginLeft: "80px" }}> </span>
                       <span style={{ float: "right" }}>
                         {command.keys
-                          .map(key => keycode(key).toUpperCase())
+                          .map(key =>
+                            keycode(key) ? keycode(key).toUpperCase() : ""
+                          )
                           .reduce((a, b) => a + " + " + b)}
                       </span>
                       <br />
