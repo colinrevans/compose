@@ -137,6 +137,10 @@ const octaveSpan = sortedVert => {
   return Math.ceil((midiNote(highest) - midiNote(lowest)) / 12)
 }
 
+const removeAccidentals = vert => {
+  return { ...vert, keys: vert.keys.map(key => ({ ...key, accidental: "" })) }
+}
+
 const clean = x => removeDuplicateNotes(sortVerticality(x))
 
 export default {
@@ -149,5 +153,6 @@ export default {
   keyFromMidiNote,
   deleteNoteInVerticalityByIdx,
   removeDuplicateNotes,
+  removeAccidentals,
   clean,
 }

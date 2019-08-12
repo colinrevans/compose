@@ -39,6 +39,9 @@ const keysToNotes = {
   k: { key: "c" },
   l: { key: "d" },
   [";"]: { key: "e" },
+  b: { key: "b" },
+  v: { key: "a" },
+  c: { key: "g" },
 }
 
 import {
@@ -157,6 +160,13 @@ export const InfiniteVexflow = ({ context, scale, x, y, id, selected }) => {
       })
     }
 
+    const deleteAccidentals = () => {
+      setNotes(notes => {
+        let l = m.removeAccidentals(last(notes))
+        return [...notes.slice(0, notes.length - 1), l]
+      })
+    }
+
     const deleteByIdx = idx => {
       setNotes(notes => {
         let l = m.deleteNoteInVerticalityByIdx(last(notes), idx - 1)
@@ -184,6 +194,10 @@ export const InfiniteVexflow = ({ context, scale, x, y, id, selected }) => {
       "delete note in verticality by idx": {
         keys: [/d/, /\d/],
         fn: x => deleteByIdx(x),
+      },
+      "delete accidentals": {
+        keys: [/d/, /a/],
+        fn: x => deleteAccidentals(),
       },
       "repeat last note and plane up": {
         keys: [/r/, /m/, /u/],
@@ -274,6 +288,7 @@ export const InfiniteVexflow = ({ context, scale, x, y, id, selected }) => {
       }
       let octave = context.octave
       if (["k", "l", ";"].includes(e.key)) octave += 1
+      if (["b", "v", "c"].includes(e.key)) octave -= 1
       if (e.metaKey)
         addNoteToLastVerticality({
           keys: [{ octave, accidental: "", ...keysToNotes[e.key] }],

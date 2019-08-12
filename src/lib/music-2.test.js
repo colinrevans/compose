@@ -21,6 +21,27 @@ const CMAJTRIAD = {
   duration: "q",
 }
 
+const CMINTRIAD = {
+  keys: [
+    {
+      key: "c",
+      octave: 4,
+      accidental: "",
+    },
+    {
+      key: "e",
+      octave: 4,
+      accidental: "b",
+    },
+    {
+      key: "g",
+      octave: 4,
+      accidental: "",
+    },
+  ],
+  duration: "q",
+}
+
 const CMAJTRIADDOUBLED = {
   keys: [
     {
@@ -253,5 +274,10 @@ describe("music-2", () => {
     expect(fn(CMAJTRIAD, 1)).toEqual(FIFTHONC)
     expect(fn(EMPTY, 0)).toEqual(EMPTY)
     expect(fn(CMAJTRIAD, 5)).toEqual(CMAJTRIAD)
+  })
+
+  it("removes accidentals from a verticality", () => {
+    const fn = music.removeAccidentals
+    expect(fn(CMINTRIAD)).toEqual(CMAJTRIAD)
   })
 })
