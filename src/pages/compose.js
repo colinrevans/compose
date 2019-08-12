@@ -1,9 +1,6 @@
 import React, { useEffect, useState, useCallback } from "react"
 import { Link } from "gatsby"
-import { Vexflow } from "../components/vexflow-components.js"
 import Button from "@material-ui/core/Button"
-import TextField from "@material-ui/core/TextField"
-import Checkbox from "@material-ui/core/Checkbox"
 import { equals } from "ramda"
 import { Spotify, Youtube } from "../components/embeds"
 import keycode from "keycode"
@@ -11,6 +8,15 @@ import empty from "is-empty"
 import { Sampler } from "tone"
 import pdfjsLib from "pdfjs-dist"
 import invariant from "invariant"
+import {
+  setElementPropertyById,
+  getViewportCoordinates,
+  setPropertyForAll,
+  selectElementAndDeselectRest,
+  deleteElementById,
+} from "../lib/infinite-util"
+import Inspector from "../components/inspector"
+import InfiniteVexflow from "../components/InfiniteVexflow"
 import "../components/layout.css"
 
 // in public folder
@@ -29,7 +35,10 @@ let idCount = 0
 const ComposeContext = React.createContext({})
 
 const Compose = () => {
-  const [mouse, setMouse] = useState({ x: 100, y: 100 })
+  const [mouse, setMouse] = useState({
+    x: window.innerWidth / 2,
+    y: window.innerHeight / 2,
+  })
   const [translate, setTranslate] = useState({ x: 0, y: 0 })
   const [zoom, setZoom] = useState({ scale: 1 })
   const [elements, setElements] = useState([])
@@ -41,6 +50,8 @@ const Compose = () => {
   const [inspecting, setInspecting] = useState(false)
   const [synth, setSynth] = useState(null)
   const [zenMode, setZenMode] = useState(false)
+  const [noteMode, setNoteMode] = useState(false)
+  const [octave, setOctave] = useState(4)
 
   {
     /* FUNCTIONS FOR COMMANDS . see below for command list. */
@@ -60,6 +71,7 @@ const Compose = () => {
       },
     ])
     setLastInteractedElemId(idCount)
+    if (component.name === "InfiniteVexflow") setNoteMode(true)
     idCount += 1
   }
 
@@ -114,7 +126,6 @@ const Compose = () => {
             src: text.match(/=.+/)[0].substr(1),
           })
         else {
-          let alt = [e.altKeys]
           console.log("typeof: ", typeof test)
           createElement(InfiniteTextArea, mouse.x, mouse.y, {
             text,
@@ -128,36 +139,132 @@ const Compose = () => {
     /* COMMANDS */
   }
 
-  // prettier-ignore
   const commands = {
-    'navigate left': { fn: navigateLeft, keys: [16, 65], mode: 'noedit' },
-    'navigate right': { fn: navigateRight, keys: [16, 68], mode: 'noedit' },
-    'navigate up': { fn: navigateUp, keys: [16, 87], mode: 'noedit' },
-    'navigate down': { fn: navigateDown, keys: [16, 83], mode: 'noedit' },
-    'clear': { fn: (() => setElements([])), keys: [16, 67],  mode: 'noedit'},
-    'delete last': { fn: () => setElements(elements => elements.slice(0, elements.length - 1)),
-                     keys: [16, 88], mode: 'noedit'},
-    'create text field': { fn: (() => createElement(InfiniteTextArea)), keys: [16, 32],  mode: 'noedit'},
-    'create score': { fn: (() => createElement(InfiniteVexflow)), keys: [16, 86],  mode: 'noedit'},
-    'create youtube embed': { fn: (() => createElement(InfiniteYoutube)), keys: [16, 89],  mode: 'noedit'},
-    'create pdf': { fn: (() => createElement(InfinitePDF)), keys: [16, 80], mode: 'noedit'},
-    'show help': { fn: (() => setShowHelp(prev => !prev)), keys: [16, 191], mode: 'noedit'},
-    'move left': { fn: (() => setTranslate(cur => ({ ...cur, x: cur.x + 150 / zoom.scale}))),
-                   keys: [65], altKeys: [72], mode: 'noedit'},
-    'move up': { fn: (() => setTranslate(cur => ({ ...cur, y: cur.y + 150 / zoom.scale}))),
-                 keys: [87], altKeys: [75], mode: 'noedit'},
-    'move right': { fn: (() => setTranslate(cur => ({ ...cur, x: cur.x - 150 / zoom.scale}))),
-                    keys: [68], altKeys: [76], mode: 'noedit'},
-    'move down': { fn: (() => setTranslate(cur => ({ ...cur, y: cur.y - 150 / zoom.scale}))),
-                   keys: [83], altKeys: [74], mode: 'noedit'},
-    'deselect all': { fn: (() => {document.activeElement.blur(); setPropertyForAll({ elements, setElements}, 'selected', false)}), keys: [27], mode: 'any'},
-    'zoom in mode': { fn: (() => setZoomMode(zm => zm !== 1 ? 1 : 0)), keys: [90], mode: 'noedit'},
-    'zoom out mode': { fn: (() => setZoomMode(zm => zm !== -1 ? -1 : 0)), keys: [16, 90], mode: 'noedit'},
-    'initiate zoom': { fn: (() => zoomAccordingToMode()), keys: [32], mode: 'noedit'},
-    'inspect mode': { fn: (() => setInspecting(i => !i)), keys: [73], mode: 'noedit'},
-    'delete selected': { fn: (() => setElements(elements => elements.filter(elem => !elem.selected))), keys: [8, 16], mode: 'any'},
-    'zen mode': { fn: (() => setZenMode(zm => !zm)), keys: [16, 70], mode: 'noedit'},
-    'paste': { fn: paste, keys: ['meta', 86], mode: 'noedit'},
+    // CANVAS MODE
+    "navigate left": { fn: navigateLeft, keys: [16, 65], mode: "canvas" },
+    "navigate right": { fn: navigateRight, keys: [16, 68], mode: "canvas" },
+    "navigate up": { fn: navigateUp, keys: [16, 87], mode: "canvas" },
+    "navigate down": { fn: navigateDown, keys: [16, 83], mode: "canvas" },
+    clear: { fn: () => setElements([]), keys: [16, 67], mode: "canvas" },
+    "delete last": {
+      fn: () => setElements(elements => elements.slice(0, elements.length - 1)),
+      keys: [16, 88],
+      mode: "canvas",
+    },
+    "create text field": {
+      fn: () => createElement(InfiniteTextArea),
+      keys: [16, 32],
+      mode: "canvas",
+    },
+    "create score": {
+      fn: () => createElement(InfiniteVexflow),
+      keys: [16, 86],
+      mode: "canvas",
+    },
+    "create youtube embed": {
+      fn: () => createElement(InfiniteYoutube),
+      keys: [16, 89],
+      mode: "canvas",
+    },
+    "create pdf": {
+      fn: () => createElement(InfinitePDF),
+      keys: [16, 80],
+      mode: "canvas",
+    },
+    "show help": {
+      fn: () => setShowHelp(prev => !prev),
+      keys: [16, 191],
+      mode: "canvas",
+    },
+    "move left": {
+      fn: () => setTranslate(cur => ({ ...cur, x: cur.x + 150 / zoom.scale })),
+      keys: [65],
+      altKeys: [72],
+      mode: "canvas",
+    },
+    "move up": {
+      fn: () => setTranslate(cur => ({ ...cur, y: cur.y + 150 / zoom.scale })),
+      keys: [87],
+      altKeys: [75],
+      mode: "canvas",
+    },
+    "move right": {
+      fn: () => setTranslate(cur => ({ ...cur, x: cur.x - 150 / zoom.scale })),
+      keys: [68],
+      altKeys: [76],
+      mode: "canvas",
+    },
+    "move down": {
+      fn: () => setTranslate(cur => ({ ...cur, y: cur.y - 150 / zoom.scale })),
+      keys: [83],
+      altKeys: [74],
+      mode: "canvas",
+    },
+    "zoom in mode": {
+      fn: () => setZoomMode(zm => (zm !== 1 ? 1 : 0)),
+      keys: [90],
+      mode: "canvas",
+    },
+    "zoom out mode": {
+      fn: () => setZoomMode(zm => (zm !== -1 ? -1 : 0)),
+      keys: [16, 90],
+      mode: "canvas",
+    },
+    "initiate zoom": {
+      fn: () => zoomAccordingToMode(),
+      keys: [32],
+      mode: "canvas",
+    },
+    "inspect mode": {
+      fn: () => setInspecting(i => !i),
+      keys: [73, 16],
+      mode: "canvas",
+    },
+    "delete selected": {
+      fn: () =>
+        setElements(elements => elements.filter(elem => !elem.selected)),
+      keys: [8, 16],
+      mode: "any",
+    },
+    "zen mode": {
+      fn: () => setZenMode(zm => !zm),
+      keys: [16, 70],
+      mode: "canvas",
+    },
+    paste: { fn: paste, keys: ["meta", 86], mode: "any" },
+    "activate note mode": {
+      fn: () => setNoteMode(nm => !nm),
+      keys: [78],
+      mode: "canvas",
+    },
+
+    // NOTES (commands that rely on an InfiniteCanvas component's state reside in the component!)
+    // TODO add octave offset to inputNote so that k and l are notes too
+    "decrease octave": {
+      fn: () => setOctave(o => (o > 1 ? o - 1 : o)),
+      keys: [90],
+      mode: "notes",
+    },
+    "increase octave": {
+      fn: () => setOctave(o => (o < 8 ? o + 1 : o)),
+      keys: [88],
+      mode: "notes",
+    },
+    "deactivate note mode": {
+      fn: () => setNoteMode(nm => !nm),
+      keys: [78],
+      mode: "notes",
+    },
+
+    // ANY
+    "deselect all": {
+      fn: () => {
+        document.activeElement.blur()
+        setPropertyForAll({ elements, setElements }, "selected", false)
+      },
+      keys: [27],
+      mode: "any",
+    },
   }
 
   {
@@ -166,17 +273,29 @@ const Compose = () => {
 
   const onKeyDown = useCallback(
     e => {
+      // infinite canvas elements call e.captured = true
+      // to say that the key event shouldn't apply at the app level.
+      // ie a tailored preventDefault system.
+      if (e.captured) return
+
       // if e.keyCode matches a keyCode from the commands list
       // && we are in the right mode
       // execute that command's function
-      let mode =
+      let mode = "canvas"
+      if (
         ["TEXTAREA", "INPUT"].includes(document.activeElement.tagName) ||
         document.activeElement.getAttribute("contenteditable") === "true"
-          ? "edit"
-          : "noedit"
+      )
+        mode = "edit"
+      else if (noteMode) mode = "notes"
       let keys = [e.keyCode]
       if (e.shiftKey) keys.push(16)
       if (e.metaKey) keys.push("meta")
+
+      if (e.keyCode === 27) {
+        setNoteMode(false)
+        setZoomMode(0)
+      }
 
       // let's get out of zoom mode if we're in it and it's not a zoom event
       if (!keys.includes(90) && !keys.includes(32)) setZoomMode(0)
@@ -187,7 +306,11 @@ const Compose = () => {
           equals(new Set(keys), new Set(command.keys)) ||
           equals(new Set(keys), new Set(command.altKeys))
         )
-          if (command.mode === "any" || command.mode === mode) {
+          if (
+            command.mode === "any" ||
+            command.mode === mode ||
+            (mode === "notes" && keys.includes(16))
+          ) {
             command.fn()
             e.preventDefault()
             document.activeElement.blur()
@@ -219,6 +342,11 @@ const Compose = () => {
 
   // synth initialization
   useEffect(() => {
+    const initializeSynth = async () => {
+      let sampler = await new Sampler(SAMPLER_FILES).toMaster()
+      setSynth(sampler)
+    }
+
     initializeSynth()
   }, [])
 
@@ -227,21 +355,16 @@ const Compose = () => {
     document.execCommand("defaultParagraphSeparator", false, "p")
   }, [])
 
-  const initializeSynth = async () => {
-    let sampler = await new Sampler(SAMPLER_FILES).toMaster()
-    setSynth(sampler)
-  }
-
   // event listeners
   useEffect(() => {
     if (window === undefined) return
-    window.addEventListener("keydown", onKeyDown, true)
-    window.addEventListener("mousemove", onMouseMove, true)
+    window.addEventListener("keydown", onKeyDown, false)
+    window.addEventListener("mousemove", onMouseMove, false)
 
     return () => {
       if (window === undefined) return
-      window.removeEventListener("keydown", onKeyDown, true)
-      window.removeEventListener("mousemove", onMouseMove, true)
+      window.removeEventListener("keydown", onKeyDown, false)
+      window.removeEventListener("mousemove", onMouseMove, false)
     }
   }, [onKeyDown, onMouseMove, mouse, translate, elements])
 
@@ -260,8 +383,11 @@ const Compose = () => {
         setLastInteractedElemId,
         inspecting,
         setInspecting,
+        mouse,
         synth,
         zenMode,
+        octave,
+        noteMode,
       }}
     >
       {elements.every(elem => !elem.selected) && inspecting ? (
@@ -314,127 +440,129 @@ const Compose = () => {
             top: "calc(50vh)",
           }}
         />
-        <h1
-          style={{
+        {/* COMPOSE title + XY position
+            <h1
+            style={{
             position: "fixed",
             top: 20,
             left: 20,
             color: "grey",
             fontWeight: 300,
             zIndex: 12,
-          }}
-        >
-          compose
-        </h1>
-        <span
-          style={{
+            }}
+            >
+            compose
+            </h1>
+            <span
+            style={{
             position: "fixed",
             top: 34,
             left: 200,
             color: "lightgrey",
             fontFamily: "sans-serif",
-          }}
-        >
-          ({Math.round(-1 * translate.x)}, {Math.round(-1 * translate.y)})
-        </span>
+            }}
+            >
+            ({Math.round(-1 * translate.x)}, {Math.round(-1 * translate.y)})
+            </span>
+          */}
         {/* CLEAR */}
-        <Button
-          style={{
+        {/*
+            <Button
+            style={{
             position: "fixed",
             bottom: 20,
             left: 20,
             color: "grey",
             zIndex: 14,
-          }}
-          onClick={() => {
+            }}
+            onClick={() => {
             setElements([])
-          }}
-        >
-          clear
-        </Button>
-        {/* TO ORIGIN */}
-        <Button
-          style={{
+            }}
+            >
+            clear
+            </Button>
+            <Button
+            style={{
             position: "fixed",
             bottom: 20,
             left: 120,
             color: "grey",
             zIndex: 14,
-          }}
-          onClick={() => setTranslate({ x: 0, y: 0 })}
-        >
-          origin
-        </Button>
-        <Button
-          style={{
+            }}
+            onClick={() => setTranslate({ x: 0, y: 0 })}
+            >
+            origin
+            </Button>
+            <Button
+            style={{
             position: "fixed",
             bottom: 20,
             left: 220,
             color: "grey",
             zIndex: 14,
-          }}
-          onClick={() => setShowHelp(s => !s)}
-        >
-          help
-        </Button>
-        <Button
-          style={{
+            }}
+            onClick={() => setShowHelp(s => !s)}
+            >
+            help
+            </Button>
+            <Button
+            style={{
             position: "fixed",
             bottom: 20,
             left: 320,
             color: "grey",
             zIndex: 14,
-          }}
-          onClick={() => console.log(elements)}
-        >
-          log
-        </Button>
+            }}
+            onClick={() => console.log(elements)}
+            >
+            log
+            </Button>
 
-        {/* NAVIGATION */}
-        <Button
-          style={{
+            <Button
+            style={{
             position: "fixed",
             bottom: "50vh",
             left: 5,
             color: "grey",
-          }}
-          onClick={navigateLeft}
-        >
-          ⟵
-        </Button>
-        <Button
-          style={{
+            }}
+            onClick={navigateLeft}
+            >
+            ⟵
+            </Button>
+            <Button
+            style={{
             position: "fixed",
             bottom: "50vh",
             right: 5,
             color: "grey",
-          }}
-          onClick={navigateRight}
-        >
-          ⟶
-        </Button>
-        <Button
-          style={{
+            }}
+            onClick={navigateRight}
+            >
+            ⟶
+            </Button>
+            <Button
+            style={{
             position: "fixed",
             left: "calc(50vw - 32px)",
             top: 5,
             color: "grey",
-          }}
-          onClick={navigateUp}
-        >
-          ↑
-        </Button>
-        <Button
-          style={{
+            }}
+            onClick={navigateUp}
+            >
+            ↑
+            </Button>
+            <Button
+            style={{
             position: "fixed",
             left: "calc(50vw - 32px)",
             bottom: 5,
             color: "grey",
-          }}
-          onClick={navigateDown}
-        >
-          ↓
-        </Button>
+            }}
+            onClick={navigateDown}
+            >
+            ↓
+            </Button>
+          */}
         {showHelp ? (
           <>
             <style jsx>
@@ -539,7 +667,6 @@ const InfiniteVoicingAssistant = props => {
 }
 
 const InfinitePDF = ({ context, scale, x, y, id, selected, ...props }) => {
-  //https://repositorio.ufsc.br/bitstream/handle/123456789/163729/The%20Ballad%20of%20the%20Sad%20Caf%C3%A9%20-%20Carson%20McCullers.pdf?sequence=1
   if (context.zenMode && context.lastInteractedElemId !== id) return null
 
   const [options, setOptions] = useState({
@@ -708,171 +835,6 @@ const InfiniteYoutube = ({ context, scale, x, y, id, selected, ...props }) => {
         ) : null}
       </div>
     </>
-  )
-}
-
-const InfiniteVexflow = ({ context, scale, x, y, id, selected }) => {
-  if (context.zenMode && context.lastInteractedElemId !== id) return null
-
-  const [options, setOptions] = useState({
-    ["border color"]: "grey",
-    ["scale"]: 1 / scale,
-    ["playback"]: false,
-    ["easy score"]: "D5/w/r",
-  })
-  const { viewportX, viewportY } = getViewportCoordinates(
-    x,
-    y,
-    context.translate,
-    context.zoom
-  )
-
-  return (
-    <>
-      {id === context.lastInteractedElemId && context.inspecting && selected ? (
-        <Inspector options={options} setOptions={setOptions} />
-      ) : null}
-
-      <div
-        style={{
-          position: "fixed",
-          top: viewportY - 75 - (selected ? 1 : 0),
-          left: viewportX - 150 - (selected ? 1 : 0),
-          transform: `scale(${context.zoom.scale / (1 / options.scale)})`,
-          border: `${selected ? `1px solid ${options["border color"]}` : ""}`,
-        }}
-        onClick={e => {
-          if (!context.zoomMode) {
-            e.stopPropagation()
-            if (selected && !context.inspecting)
-              setElementPropertyById(id, context, "selected", false)
-            if (selected && context.inspecting)
-              context.setLastInteractedElemId(id)
-            if (!selected) {
-              if (e.shiftKey)
-                setElementPropertyById(id, context, "selected", true)
-              else selectElementAndDeselectRest(id, context)
-              context.setLastInteractedElemId(id)
-            }
-          }
-        }}
-      >
-        {selected ? (
-          <>
-            <span
-              style={{
-                position: "absolute",
-                right: 1,
-                top: -7,
-                fontFamily: "sans-serif",
-                cursor: "pointer",
-              }}
-              onClick={e => {
-                deleteElementById(id, context)
-                e.preventDefault()
-                e.stopPropagation()
-              }}
-            >
-              x
-            </span>
-          </>
-        ) : null}
-        <Vexflow
-          name={`vex-${id}`}
-          synth={context.synth ? context.synth : null}
-          easyscore={options["easy score"]}
-          playback={options.playback}
-        />
-      </div>
-    </>
-  )
-}
-
-const Inspector = ({ options, setOptions }) => {
-  const [tempOptions, setTempOptions] = useState(options)
-
-  const handleChange = (e, key) => {
-    setTempOptions(opt => ({ ...opt, [key]: e.target.value }))
-  }
-  return (
-    <div
-      style={{
-        width: "30vw",
-        position: "fixed",
-        color: "black",
-        outline: "1px solid black",
-        backgroundColor: "white",
-        right: 0,
-        top: 0,
-        height: "100vh",
-        zIndex: 100,
-      }}
-    >
-      <div style={{ margin: 20 }}>
-        inspector
-        <hr />
-        {!empty(tempOptions)
-          ? Object.keys(tempOptions).map(key => (
-              <div style={{ height: 46 }}>
-                <div style={{ float: "left" }}>{key}: </div>
-                <div style={{ float: "right" }}>
-                  {React.createElement(
-                    typeof tempOptions[key] === "boolean"
-                      ? OptionsToggle
-                      : OptionsTextField,
-                    {
-                      optionKey: key,
-                      optionValue: tempOptions[key],
-                      setOptions,
-                    }
-                  )}
-                </div>
-              </div>
-            ))
-          : null}
-      </div>
-    </div>
-  )
-}
-
-const OptionsToggle = ({ optionKey, optionValue, setOptions }) => {
-  const [toggleValue, setToggleValue] = useState(optionValue)
-  return (
-    <Checkbox
-      color="default"
-      onClick={e => {
-        setToggleValue(v => !v)
-        setOptions(options => ({
-          ...options,
-          [optionKey]: !options[optionKey],
-        }))
-        e.stopPropagation()
-        e.preventDefault()
-      }}
-      checked={toggleValue}
-    />
-  )
-}
-
-const OptionsTextField = ({ optionKey, optionValue, setOptions }) => {
-  const [textFieldValue, setTextFieldValue] = useState(optionValue)
-  return (
-    <TextField
-      value={textFieldValue}
-      onChange={e => {
-        setTextFieldValue(e.target.value)
-      }}
-      onKeyDown={e => {
-        if (e.keyCode === 13) {
-          setOptions(options => ({
-            ...options,
-            [optionKey]: textFieldValue,
-          }))
-          e.stopPropagation()
-          e.preventDefault()
-        }
-      }}
-    />
   )
 }
 
@@ -1085,59 +1047,4 @@ const MyTextField = props => {
       />
     </>
   )
-}
-
-// ________________
-// HELPER FUNCTIONS
-// ----------------
-
-// VIEWPORT
-const getViewportCoordinates = (
-  x,
-  y,
-  globalTranslate,
-  globalZoom,
-  zoomOriginX = window.innerWidth / 2,
-  zoomOriginY = window.innerHeight / 2
-) => {
-  let scaledX = globalZoom.scale * x
-  let scaledY = globalZoom.scale * y
-  let scaledTopLeftX = globalZoom.scale * globalTranslate.x * -1
-  let scaledTopLeftY = globalZoom.scale * globalTranslate.y * -1
-  let viewportCenterX =
-    scaledTopLeftX + Math.floor(zoomOriginX) * globalZoom.scale
-  let viewportCenterY =
-    scaledTopLeftY + Math.floor(zoomOriginY) * globalZoom.scale
-  let newDiffXFromCenter = scaledX - viewportCenterX
-  let newDiffYFromCenter = scaledY - viewportCenterY
-  let viewportX = newDiffXFromCenter + zoomOriginX
-  let viewportY = newDiffYFromCenter + zoomOriginY
-  return { viewportX, viewportY }
-}
-
-// CONVENIENCE FUNCTIONS FOR SETTING Compose STATE
-const setElementPropertyById = (id, context, prop, value) => {
-  context.setElements(elements =>
-    elements.map(elem => (elem.id === id ? { ...elem, [prop]: value } : elem))
-  )
-}
-
-const setPropertyForAll = (context, prop, value) => {
-  context.setElements(elements =>
-    elements.map(elem => ({ ...elem, [prop]: value }))
-  )
-}
-
-const selectElementAndDeselectRest = (id, context) => {
-  context.setElements(elements =>
-    elements.map(elem =>
-      elem.id === id
-        ? { ...elem, selected: true }
-        : { ...elem, selected: false }
-    )
-  )
-}
-
-const deleteElementById = (id, context) => {
-  context.setElements(elements => elements.filter(elem => elem.id !== id))
 }

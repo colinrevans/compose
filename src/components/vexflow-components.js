@@ -7,7 +7,7 @@ try {
 }
 import styled, { keyframes } from "styled-components"
 
-const VexPlaybackButton = styled.button`
+export const VexPlaybackButton = styled.button`
   position: absolute;
   top: 0;
   left: 0;
@@ -25,7 +25,7 @@ export const Vexflow = props => {
   useEffect(() => {
     removeSVGs()
     renderEasyScore(props.name, props.easyscore)
-  })
+  }, [props.easyscore])
 
   let onTwoStave = props.onTwoStave !== undefined ? props.onTwoStave : () => {}
 
@@ -149,8 +149,9 @@ export const Vexflow = props => {
       }
 
       vf.draw()
+      if (props.afterRenderCallback) props.afterRenderCallback()
     } catch (err) {
-      console.log("vexflow error")
+      console.log(err)
     }
   }
 
