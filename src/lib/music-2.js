@@ -1,6 +1,6 @@
 // middle C is MIDI 60
 
-// tailored to note (verticality) format:
+// tailored to verticality format:
 // verticality : { keys: [{ key: "c", octave: 4, accidental: ''}, ...], duration: "q"}
 
 const keyHalfStepsFromCTable = {
@@ -27,7 +27,7 @@ const verticalityToMidiNotes = vert => {
 }
 
 const midiNote = note => {
-  let octavesC = (4 - note.octave) * 12 + 60
+  let octavesC = (4 - note.octave) * -12 + 60
   return (
     octavesC +
     keyHalfStepsFromCTable[note.key] +
@@ -38,4 +38,21 @@ const midiNote = note => {
 const sortVerticality = vert => {
   let newKeys = vert.keys.sort((a, b) => midiNote(a) - midiNote(b))
   return { ...vert, keys: newKeys }
+}
+
+// INPUT SHOULD BE SORTED
+const octaveSpan = sortedVert => {
+  if (sortedVert.keys.length === 1) return 1
+  if (sortedVert.keys.length === 0) return 0
+
+  const lowest = sortedVert.keys[0]
+  const highest = sortedVert.keys[sortedVert.keys.length - 1]
+  return Math.ceil((midiNote(highest) - midiNote(lowest)) / 12)
+}
+
+export default {
+  verticalityToMidiNotes,
+  midiNote,
+  sortVerticality,
+  octaveSpan,
 }

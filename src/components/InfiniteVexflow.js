@@ -3,6 +3,7 @@ import { VexPlaybackButton } from "./vexflow-components"
 import Inspector from "./inspector"
 import TextField from "@material-ui/core/TextField"
 import empty from "is-empty"
+import m from "../lib/music-2.js"
 
 const last = arr => arr[arr.length - 1]
 
@@ -107,7 +108,7 @@ export const InfiniteVexflow = ({ context, scale, x, y, id, selected }) => {
       }
       setNotes(notes => [
         ...notes.slice(0, idxOfFirstNoteToChordify),
-        { keys, duration: notes[0].duration },
+        m.sortVerticality({ keys, duration: notes[0].duration }),
       ])
     }
 
@@ -132,16 +133,17 @@ export const InfiniteVexflow = ({ context, scale, x, y, id, selected }) => {
     const invert = up => {
       let lastNote = last(notes)
       let keyToInvert = up ? lastNote.keys[0] : last(lastNote.keys)
+      const span = m.octaveSpan(lastNote)
       let newKey = {
         ...keyToInvert,
-        octave: keyToInvert.octave + (up ? 1 : -1),
+        octave: keyToInvert.octave + (up ? span : -1 * span),
       }
       let newKeys = up
         ? [...lastNote.keys.slice(1), newKey]
         : [...lastNote.keys.slice(0, lastNote.keys.length - 1), newKey]
       setNotes(notes => [
         ...notes.slice(0, notes.length - 1),
-        { ...lastNote, keys: newKeys },
+        m.sortVerticality({ ...lastNote, keys: newKeys }),
       ])
     }
 
@@ -372,10 +374,10 @@ export const InfiniteVexflow = ({ context, scale, x, y, id, selected }) => {
     setNotes(notes =>
       notes.map((n, idx) =>
         idx === notes.length - 1
-          ? {
+          ? m.sortVerticality({
               ...n,
               keys: [...n.keys, ...note.keys],
-            }
+            })
           : n
       )
     )
@@ -432,7 +434,6 @@ export const InfiniteVexflow = ({ context, scale, x, y, id, selected }) => {
           let keysInVexflowFormat = n.keys.map(
             key => `${key.key}${key.accidental}/${key.octave}`
           )
-          console.log(keysInVexflowFormat)
           let vfNote = new VF.StaveNote({
             clef: "treble",
             ...n,
