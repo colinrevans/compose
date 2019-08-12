@@ -57,6 +57,13 @@ const Compose = () => {
     /* FUNCTIONS FOR COMMANDS . see below for command list. */
   }
 
+  // 'pushes' state bottom up -- this is called from within child elements!
+  const save = (id, saveState) => {
+    setElements(elements =>
+      elements.map(elem => (elem.id === id ? { ...elem, ...saveState } : elem))
+    )
+  }
+
   const createElement = (component, x = mouse.x, y = mouse.y, options = {}) => {
     setElements(elements => [
       ...elements,
@@ -231,6 +238,11 @@ const Compose = () => {
       keys: [16, 70],
       mode: "canvas",
     },
+    "log notes": {
+      fn: () => console.log(elements),
+      keys: [16, 69],
+      mode: "any",
+    },
     paste: { fn: paste, keys: ["meta", 86], mode: "any" },
     "activate note mode": {
       fn: () => setNoteMode(nm => !nm),
@@ -386,6 +398,7 @@ const Compose = () => {
         mouse,
         synth,
         zenMode,
+        save,
         octave,
         noteMode,
       }}

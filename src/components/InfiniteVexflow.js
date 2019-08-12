@@ -51,15 +51,27 @@ import {
   selectElementAndDeselectRest,
 } from "../lib/infinite-util"
 
-export const InfiniteVexflow = ({ context, scale, x, y, id, selected }) => {
+export const InfiniteVexflow = ({
+  context,
+  scale,
+  x,
+  y,
+  id,
+  selected,
+  ...save
+}) => {
   if (context.zenMode && context.lastInteractedElemId !== id) return null
 
-  const [options, setOptions] = useState({
-    ["scale"]: 1 / scale,
-    ["playback"]: false,
-  })
+  const [options, setOptions] = useState(
+    save.options
+      ? save.options
+      : {
+          ["scale"]: 1 / scale,
+          ["playback"]: false,
+        }
+  )
   const [lastCommand, setLastCommand] = useState("")
-  const [notes, setNotes] = useState([])
+  const [notes, setNotes] = useState(save.notes ? save.notes : [])
   const [showCommandField, setShowCommandField] = useState(false)
   const [commandKeys, setCommandKeys] = useState([])
   const [svgs, setSvgs] = useState([])
@@ -70,6 +82,10 @@ export const InfiniteVexflow = ({ context, scale, x, y, id, selected }) => {
     context.translate,
     context.zoom
   )
+
+  const pushStateToCanvas = () => {
+    context.save(id, { notes, options })
+  }
 
   // KEYBOARD EVENT LISTENERS
   useEffect(() => {
@@ -191,6 +207,10 @@ export const InfiniteVexflow = ({ context, scale, x, y, id, selected }) => {
         keys: [/m/, /d/],
         fn: () => plane(0),
       },
+      write: {
+        keys: [/w/],
+        fn: () => pushStateToCanvas(),
+      },
       "delete note in verticality by idx": {
         keys: [/d/, /\d/],
         fn: x => deleteByIdx(x),
@@ -205,6 +225,10 @@ export const InfiniteVexflow = ({ context, scale, x, y, id, selected }) => {
           repeat(1)
           plane(1)
         },
+      },
+      load: {
+        keys: [/l/],
+        fn: () => setNotes(notes => (save.notes ? save.notes : notes)),
       },
       "repeat last note and plane down": {
         keys: [/r/, /m/, /d/],
