@@ -21,6 +21,48 @@ const CMAJTRIAD = {
   duration: "q",
 }
 
+const DMINTRIAD = {
+  keys: [
+    {
+      key: "d",
+      octave: 4,
+      accidental: "",
+    },
+    {
+      key: "f",
+      octave: 4,
+      accidental: "",
+    },
+    {
+      key: "a",
+      octave: 4,
+      accidental: "",
+    },
+  ],
+  duration: "q",
+}
+
+const BDIMTRIAD = {
+  keys: [
+    {
+      key: "b",
+      octave: 3,
+      accidental: "",
+    },
+    {
+      key: "d",
+      octave: 4,
+      accidental: "",
+    },
+    {
+      key: "f",
+      octave: 4,
+      accidental: "",
+    },
+  ],
+  duration: "q",
+}
+
 const CMAJTRIADOPEN = {
   keys: [
     {
@@ -90,12 +132,24 @@ const CSHARP3 = {
   duration: "q",
 }
 
+const DFLAT5 = {
+  keys: [
+    {
+      key: "d",
+      octave: 5,
+      accidental: "b",
+    },
+  ],
+  duration: "q",
+}
+
 describe("music-2", () => {
   it("calculates midi notes for a verticality.", () => {
     const fn = music.verticalityToMidiNotes
     expect(fn(CMAJTRIAD)).toEqual([60, 64, 67])
     expect(fn(MIDDLEC)).toEqual([60])
     expect(fn(CSHARP3)).toEqual([49])
+    expect(fn(DFLAT5)).toEqual([73])
     expect(fn(EMPTY)).toEqual([])
   })
 
@@ -108,8 +162,20 @@ describe("music-2", () => {
   it("calculates the octave span of a verticality", () => {
     const fn = music.octaveSpan
     expect(fn(CMAJTRIAD)).toBe(1)
-    expect(fn(MIDDLEC)).toBe(1)
+    expect(fn(MIDDLEC)).toBe(0)
     expect(fn(EMPTY)).toBe(0)
     expect(fn(CMAJTRIADOPEN)).toBe(2)
+  })
+
+  it("diatonically planes a verticality up", () => {
+    const fn = music.planeUp
+    expect(fn(CMAJTRIAD)).toEqual(DMINTRIAD)
+    expect(fn(EMPTY)).toEqual(EMPTY)
+  })
+
+  it("diatonically planes a verticality down", () => {
+    const fn = music.planeDown
+    expect(fn(CMAJTRIAD)).toEqual(BDIMTRIAD)
+    expect(fn(EMPTY)).toEqual(EMPTY)
   })
 })

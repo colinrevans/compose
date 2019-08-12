@@ -13,6 +13,44 @@ const keyHalfStepsFromCTable = {
   b: 11,
 }
 
+const notesUp = {
+  c: "d",
+  d: "e",
+  e: "f",
+  f: "g",
+  g: "a",
+  a: "b",
+  b: "c",
+}
+
+const notesDown = {
+  c: "b",
+  d: "c",
+  e: "d",
+  f: "e",
+  g: "f",
+  a: "g",
+  b: "a",
+}
+
+const planeUp = vert => {
+  let keys = vert.keys.map(k => ({
+    ...k,
+    key: notesUp[k.key],
+    octave: k.key === "b" ? k.octave + 1 : k.octave,
+  }))
+  return { ...vert, keys }
+}
+
+const planeDown = vert => {
+  let keys = vert.keys.map(k => ({
+    ...k,
+    key: notesDown[k.key],
+    octave: k.key === "c" ? k.octave - 1 : k.octave,
+  }))
+  return { ...vert, keys }
+}
+
 const accidentalHalfStepsTable = {
   n: 0,
   "": 0,
@@ -42,8 +80,7 @@ const sortVerticality = vert => {
 
 // INPUT SHOULD BE SORTED
 const octaveSpan = sortedVert => {
-  if (sortedVert.keys.length === 1) return 1
-  if (sortedVert.keys.length === 0) return 0
+  if (sortedVert.keys.length <= 1) return 0
 
   const lowest = sortedVert.keys[0]
   const highest = sortedVert.keys[sortedVert.keys.length - 1]
@@ -55,4 +92,6 @@ export default {
   midiNote,
   sortVerticality,
   octaveSpan,
+  planeUp,
+  planeDown,
 }

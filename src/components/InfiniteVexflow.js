@@ -147,6 +147,16 @@ export const InfiniteVexflow = ({ context, scale, x, y, id, selected }) => {
       ])
     }
 
+    const plane = up => {
+      let fn
+      if (up) fn = m.planeUp
+      else fn = m.planeDown
+      setNotes(notes => {
+        let l = fn(last(notes))
+        return [...notes, l]
+      })
+    }
+
     const commandFieldCommands = {
       "octave up": {
         keys: [/o/, /u/],
@@ -155,6 +165,14 @@ export const InfiniteVexflow = ({ context, scale, x, y, id, selected }) => {
       "octave down": {
         keys: [/o/, /d/],
         fn: x => octaveDown(1),
+      },
+      "plane last up": {
+        keys: [/p/, /u/],
+        fn: () => plane(1),
+      },
+      "plane last down": {
+        keys: [/p/, /d/],
+        fn: () => plane(0),
       },
       "delete n last": {
         keys: [/x/, /\d/],
