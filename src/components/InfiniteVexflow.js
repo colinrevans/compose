@@ -14,6 +14,7 @@ let keysDown = {}
 // this is used for managing whether piano roll input
 // adds to a chord or creates a new note.
 let lastKeyEventType = null
+let firstPianoRollKey = null
 
 let note = {
   keys: [{ key: "c", octave: 4, accidental: "" }],
@@ -58,7 +59,6 @@ export const InfiniteVexflow = ({ context, scale, x, y, id, selected }) => {
   const [notes, setNotes] = useState([])
   const [showCommandField, setShowCommandField] = useState(false)
   const [commandKeys, setCommandKeys] = useState([])
-  const [metaMakesNewNote, setMetaMakesNewNote] = useState(false)
   const [svgs, setSvgs] = useState([])
   const [svgXPositions, setSvgXPositions] = useState([])
   const { viewportX, viewportY } = getViewportCoordinates(
@@ -108,7 +108,7 @@ export const InfiniteVexflow = ({ context, scale, x, y, id, selected }) => {
       }
       setNotes(notes => [
         ...notes.slice(0, idxOfFirstNoteToChordify),
-        m.sortVerticality({ keys, duration: notes[0].duration }),
+        m.clean({ keys, duration: notes[0].duration }),
       ])
     }
 
@@ -153,7 +153,14 @@ export const InfiniteVexflow = ({ context, scale, x, y, id, selected }) => {
       else fn = m.planeDown
       setNotes(notes => {
         let l = fn(last(notes))
-        return [...notes, l]
+        return [...notes.slice(0, notes.length - 1), l]
+      })
+    }
+
+    const deleteByIdx = idx => {
+      setNotes(notes => {
+        let l = m.deleteNoteInVerticalityByIdx(last(notes), idx - 1)
+        return [...notes.slice(0, notes.length - 1), l]
       })
     }
 
@@ -166,13 +173,31 @@ export const InfiniteVexflow = ({ context, scale, x, y, id, selected }) => {
         keys: [/o/, /d/],
         fn: x => octaveDown(1),
       },
-      "plane last up": {
-        keys: [/p/, /u/],
+      "plane up": {
+        keys: [/m/, /u/],
         fn: () => plane(1),
       },
-      "plane last down": {
-        keys: [/p/, /d/],
+      "plane down": {
+        keys: [/m/, /d/],
         fn: () => plane(0),
+      },
+      "delete note in verticality by idx": {
+        keys: [/d/, /\d/],
+        fn: x => deleteByIdx(x),
+      },
+      "repeat last note and plane up": {
+        keys: [/r/, /m/, /u/],
+        fn: () => {
+          repeat(1)
+          plane(1)
+        },
+      },
+      "repeat last note and plane down": {
+        keys: [/r/, /m/, /d/],
+        fn: () => {
+          repeat(1)
+          plane(0)
+        },
       },
       "delete n last": {
         keys: [/x/, /\d/],
@@ -245,32 +270,21 @@ export const InfiniteVexflow = ({ context, scale, x, y, id, selected }) => {
 
     const pianoRoll = e => {
       if (keysDown[e.key]) {
-        console.log("repeat")
         return
       }
       let octave = context.octave
       if (["k", "l", ";"].includes(e.key)) octave += 1
       if (e.metaKey)
-        if (metaMakesNewNote) {
-          addNoteToEnd({
-            // NOTE : keysToNotes may contain accidental information
-            // for now.
-            keys: [{ octave, accidental: "", ...keysToNotes[e.key] }],
-            duration: "q",
-          })
-          setMetaMakesNewNote(false)
-        } else {
-          addNoteToLastVerticality({
-            keys: [{ octave, accidental: "", ...keysToNotes[e.key] }],
-            duration: "q",
-          })
-          setMetaMakesNewNote(false)
-        }
+        addNoteToLastVerticality({
+          keys: [{ octave, accidental: "", ...keysToNotes[e.key] }],
+          duration: "q",
+        })
       else
         addNoteToEnd({
           keys: [{ octave, accidental: "", ...keysToNotes[e.key] }],
           duration: "q",
         })
+      if (firstPianoRollKey === null) firstPianoRollKey = e.key
     }
 
     const doLastCommand = () => {
@@ -312,6 +326,14 @@ export const InfiniteVexflow = ({ context, scale, x, y, id, selected }) => {
         fn: e => pianoRoll(e),
         commandField: false,
       },
+      "move up": {
+        key: /ArrowUp/,
+        fn: () => plane(1),
+      },
+      "move down": {
+        key: /ArrowDown/,
+        fn: () => plane(0),
+      },
       "do again": {
         key: /\./,
         fn: () => doLastCommand(),
@@ -321,6 +343,7 @@ export const InfiniteVexflow = ({ context, scale, x, y, id, selected }) => {
     const onKeyDown = e => {
       if (id !== context.lastInteractedElemId) return
       if (!context.noteMode) return
+      console.log(e.key)
 
       const capture = () => {
         e.captured = true
@@ -346,7 +369,6 @@ export const InfiniteVexflow = ({ context, scale, x, y, id, selected }) => {
 
     const onKeyUp = e => {
       delete keysDown[e.key]
-      if (e.key === "Meta") setMetaMakesNewNote(true)
       if (showCommandField) {
         for (let key of Object.keys(commandFieldCommands)) {
           let command = commandFieldCommands[key]
@@ -363,6 +385,7 @@ export const InfiniteVexflow = ({ context, scale, x, y, id, selected }) => {
         }
       }
       lastKeyEventType = "up"
+      if (e.key === firstPianoRollKey) firstPianoRollKey = null
     }
 
     window.addEventListener("keydown", onKeyDown, true)
@@ -376,7 +399,6 @@ export const InfiniteVexflow = ({ context, scale, x, y, id, selected }) => {
     id,
     context.octave,
     context.noteMode,
-    metaMakesNewNote,
     showCommandField,
     commandKeys,
     notes,
@@ -392,7 +414,7 @@ export const InfiniteVexflow = ({ context, scale, x, y, id, selected }) => {
     setNotes(notes =>
       notes.map((n, idx) =>
         idx === notes.length - 1
-          ? m.sortVerticality({
+          ? m.clean({
               ...n,
               keys: [...n.keys, ...note.keys],
             })
@@ -411,10 +433,10 @@ export const InfiniteVexflow = ({ context, scale, x, y, id, selected }) => {
     }
 
     let now = new Date()
-    if (lastKeyEventType === "up" || lastKeyEventType === null) {
+    if (firstPianoRollKey === null || lastKeyEventType === null) {
       setNotes(notes => [...notes, note])
       sound()
-    } else if (lastKeyEventType === "down") {
+    } else if (firstPianoRollKey) {
       addNoteToLastVerticality(note)
       sound()
     }

@@ -21,6 +21,58 @@ const CMAJTRIAD = {
   duration: "q",
 }
 
+const CMAJTRIADDOUBLED = {
+  keys: [
+    {
+      key: "c",
+      octave: 4,
+      accidental: "",
+    },
+    {
+      key: "e",
+      octave: 4,
+      accidental: "",
+    },
+    {
+      key: "g",
+      octave: 4,
+      accidental: "",
+    },
+    {
+      key: "c",
+      octave: 4,
+      accidental: "",
+    },
+    {
+      key: "e",
+      octave: 4,
+      accidental: "",
+    },
+    {
+      key: "g",
+      octave: 4,
+      accidental: "",
+    },
+  ],
+  duration: "q",
+}
+
+const FIFTHONC = {
+  keys: [
+    {
+      key: "c",
+      octave: 4,
+      accidental: "",
+    },
+    {
+      key: "g",
+      octave: 4,
+      accidental: "",
+    },
+  ],
+  duration: "q",
+}
+
 const DMINTRIAD = {
   keys: [
     {
@@ -143,6 +195,10 @@ const DFLAT5 = {
   duration: "q",
 }
 
+const verticalitied = n => {
+  return { keys: [n], duration: "q" }
+}
+
 describe("music-2", () => {
   it("calculates midi notes for a verticality.", () => {
     const fn = music.verticalityToMidiNotes
@@ -177,5 +233,25 @@ describe("music-2", () => {
     const fn = music.planeDown
     expect(fn(CMAJTRIAD)).toEqual(BDIMTRIAD)
     expect(fn(EMPTY)).toEqual(EMPTY)
+  })
+
+  it("creates a key object from a midi note", () => {
+    const fn = music.keyFromMidiNote
+    expect(verticalitied(fn(60))).toEqual(MIDDLEC)
+  })
+
+  it("removes duplicate notes", () => {
+    const fn = music.removeDuplicateNotes
+    expect(fn(CMAJTRIADDOUBLED)).toEqual(CMAJTRIAD)
+    expect(fn(EMPTY)).toEqual(EMPTY)
+    expect(fn(CMAJTRIAD)).toEqual(CMAJTRIAD)
+  })
+
+  it("removes keys in a verticality by index", () => {
+    const fn = music.deleteNoteInVerticalityByIdx
+    expect(fn(MIDDLEC, 0)).toEqual(EMPTY)
+    expect(fn(CMAJTRIAD, 1)).toEqual(FIFTHONC)
+    expect(fn(EMPTY, 0)).toEqual(EMPTY)
+    expect(fn(CMAJTRIAD, 5)).toEqual(CMAJTRIAD)
   })
 })

@@ -1,3 +1,5 @@
+import { equals } from "ramda"
+
 // middle C is MIDI 60
 
 // tailored to verticality format:
@@ -33,12 +35,55 @@ const notesDown = {
   b: "a",
 }
 
+const accidentalHalfStepsTable = {
+  n: 0,
+  "": 0,
+  b: -1,
+  "#": 1,
+  bb: -2,
+  "##": 2,
+}
+
+const halfStepToAccidentals = {
+  "0": "",
+  "1": "#",
+  "2": "##",
+  "-1": "b",
+  "-2": "bb",
+}
+
+const keyFromMidiNote = n => {
+  let octave = Math.floor(n / 12) - 1
+  let mod = n % 12
+  let key
+  let diff = 0
+  for (let k of Object.keys(keyHalfStepsFromCTable)) {
+    if (mod >= keyHalfStepsFromCTable[k]) {
+      key = k
+      diff = mod - keyHalfStepsFromCTable[k]
+    }
+  }
+  let accidental = halfStepToAccidentals[diff.toString()]
+  return { key, accidental, octave }
+}
+
 const planeUp = vert => {
   let keys = vert.keys.map(k => ({
     ...k,
     key: notesUp[k.key],
     octave: k.key === "b" ? k.octave + 1 : k.octave,
   }))
+  return { ...vert, keys }
+}
+
+const deleteNoteInVerticalityByIdx = (vert, i) => {
+  if (i < 0 || i >= vert.keys.length) return vert
+  let { keys } = vert
+  let r = []
+  keys.map((x, idx) => {
+    if (idx !== i) r.push(x)
+  })
+  keys = r
   return { ...vert, keys }
 }
 
@@ -51,17 +96,22 @@ const planeDown = vert => {
   return { ...vert, keys }
 }
 
-const accidentalHalfStepsTable = {
-  n: 0,
-  "": 0,
-  b: -1,
-  "#": 1,
-  bb: -2,
-  "##": 2,
-}
-
 const verticalityToMidiNotes = vert => {
   return vert.keys.map(key => midiNote(key))
+}
+
+const removeDuplicateNotes = vert => {
+  let r = []
+  let keys = vert.keys
+  for (let key of vert.keys) {
+    let unique = true
+    for (let added of r) {
+      if (equals(key, added)) unique = false
+    }
+    if (unique) r.push(key)
+  }
+  keys = r
+  return { ...vert, keys }
 }
 
 const midiNote = note => {
@@ -87,6 +137,8 @@ const octaveSpan = sortedVert => {
   return Math.ceil((midiNote(highest) - midiNote(lowest)) / 12)
 }
 
+const clean = x => removeDuplicateNotes(sortVerticality(x))
+
 export default {
   verticalityToMidiNotes,
   midiNote,
@@ -94,4 +146,8 @@ export default {
   octaveSpan,
   planeUp,
   planeDown,
+  keyFromMidiNote,
+  deleteNoteInVerticalityByIdx,
+  removeDuplicateNotes,
+  clean,
 }
