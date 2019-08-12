@@ -87,6 +87,11 @@ export const InfiniteVexflow = ({
     context.save(id, { notes, options })
   }
 
+  const loadFromCanvasState = () => {
+    setNotes(notes => (save.notes ? save.notes : notes))
+    setOptions(opts => (save.options ? save.options : opts))
+  }
+
   // KEYBOARD EVENT LISTENERS
   useEffect(() => {
     const octaveUp = offset => {
@@ -228,7 +233,7 @@ export const InfiniteVexflow = ({
       },
       load: {
         keys: [/l/],
-        fn: () => setNotes(notes => (save.notes ? save.notes : notes)),
+        fn: () => loadFromCanvasState(),
       },
       "repeat last note and plane down": {
         keys: [/r/, /m/, /d/],
