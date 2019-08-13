@@ -84,7 +84,7 @@ export const InfiniteVexflow = ({
   )
 
   const pushStateToCanvas = () => {
-    context.save(id, { notes, options })
+    context.saveElement(id, { notes, options })
   }
 
   const loadFromCanvasState = () => {

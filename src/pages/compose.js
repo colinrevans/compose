@@ -19,6 +19,12 @@ import Inspector from "../components/inspector"
 import InfiniteVexflow from "../components/InfiniteVexflow"
 import "../components/layout.css"
 
+const NAMES_TO_COMPONENTS = {
+  InfiniteVexflow: InfiniteVexflow,
+}
+
+//localStorage.clear()
+
 // in public folder
 const SAMPLER_FILES = {
   C3: "/piano/C3.[mp3|ogg]",
@@ -52,16 +58,55 @@ const Compose = () => {
   const [zenMode, setZenMode] = useState(false)
   const [noteMode, setNoteMode] = useState(false)
   const [octave, setOctave] = useState(4)
+  // toggled every time a component saves.
+  // see useEffect below that saves canvas whenever
+  // this changes.
+  const [saveTicker, setSaveTicker] = useState(null)
 
   {
-    /* FUNCTIONS FOR COMMANDS . see below for command list. */
+    /* LOADING AND SAVING */
   }
 
-  // 'pushes' state bottom up -- this is called from within child elements!
-  const save = (id, saveState) => {
+  const saveCanvas = () => {
+    let saveData = { elements, translate }
+    localStorage.setItem("canvas", JSON.stringify(saveData))
+    console.log("SAVED CANVAS")
+  }
+
+  // 'pushes' state bottom up -- this is called from within child elements using the provided context!
+  const saveElement = (id, saveState) => {
     setElements(elements =>
       elements.map(elem => (elem.id === id ? { ...elem, ...saveState } : elem))
     )
+    setSaveTicker(s => !s)
+  }
+
+  useEffect(() => {
+    if (saveTicker !== null) saveCanvas()
+  }, [saveTicker])
+
+  useEffect(() => {
+    let saveData = localStorage.getItem("canvas")
+    saveData = JSON.parse(saveData)
+    console.log(saveData)
+    if (!saveData) return
+    saveData = {
+      ...saveData,
+      elements: saveData.elements.map(elem => ({
+        ...elem,
+        component: NAMES_TO_COMPONENTS[elem.componentName],
+        selected: false,
+      })),
+    }
+    let { elements, translate } = saveData
+    console.log(elements)
+    setElements(elements)
+    idCount = elements[elements.length - 1].id + 1
+    setTranslate(translate)
+  }, [])
+
+  {
+    /* FUNCTIONS FOR COMMANDS . see below for command list. */
   }
 
   const createElement = (component, x = mouse.x, y = mouse.y, options = {}) => {
@@ -73,6 +118,7 @@ const Compose = () => {
         scale: zoom.scale,
         id: idCount,
         component,
+        componentName: component.name,
         selected: false,
         ...options,
       },
@@ -398,7 +444,8 @@ const Compose = () => {
         mouse,
         synth,
         zenMode,
-        save,
+        saveElement,
+        saveCanvas,
         octave,
         noteMode,
       }}
@@ -444,138 +491,148 @@ const Compose = () => {
       >
         <div
           style={{
-            width: 1,
-            height: 1,
+            width: 2,
+            height: 2,
             backgroundColor: "black",
-            color: "black",
+            color: "grey",
             position: "fixed",
-            left: "calc(50vw)",
-            top: "calc(50vh)",
+            left: "calc(50vw - 1px)",
+            top: "calc(50vh - 1px)",
           }}
         />
-        {/* COMPOSE title + XY position
-            <h1
-            style={{
+        <h1
+          className="noselect"
+          style={{
             position: "fixed",
             top: 20,
             left: 20,
             color: "grey",
             fontWeight: 300,
             zIndex: 12,
-            }}
-            >
-            compose
-            </h1>
-            <span
-            style={{
+          }}
+        >
+          compose
+        </h1>
+        <span
+          className="noselect"
+          style={{
             position: "fixed",
             top: 34,
             left: 200,
             color: "lightgrey",
             fontFamily: "sans-serif",
-            }}
-            >
-            ({Math.round(-1 * translate.x)}, {Math.round(-1 * translate.y)})
-            </span>
-          */}
+          }}
+        >
+          ({Math.round(-1 * translate.x)}, {Math.round(-1 * translate.y)})
+        </span>
         {/* CLEAR */}
-        {/*
-            <Button
-            style={{
+        <Button
+          style={{
             position: "fixed",
             bottom: 20,
             left: 20,
             color: "grey",
             zIndex: 14,
-            }}
-            onClick={() => {
+          }}
+          onClick={() => {
             setElements([])
-            }}
-            >
-            clear
-            </Button>
-            <Button
-            style={{
+          }}
+        >
+          clear
+        </Button>
+        <Button
+          style={{
             position: "fixed",
             bottom: 20,
             left: 120,
             color: "grey",
             zIndex: 14,
-            }}
-            onClick={() => setTranslate({ x: 0, y: 0 })}
-            >
-            origin
-            </Button>
-            <Button
-            style={{
+          }}
+          onClick={() => setTranslate({ x: 0, y: 0 })}
+        >
+          origin
+        </Button>
+        <Button
+          style={{
             position: "fixed",
             bottom: 20,
             left: 220,
             color: "grey",
             zIndex: 14,
-            }}
-            onClick={() => setShowHelp(s => !s)}
-            >
-            help
-            </Button>
-            <Button
-            style={{
+          }}
+          onClick={() => setShowHelp(s => !s)}
+        >
+          help
+        </Button>
+        <Button
+          style={{
             position: "fixed",
             bottom: 20,
             left: 320,
             color: "grey",
             zIndex: 14,
-            }}
-            onClick={() => console.log(elements)}
-            >
-            log
-            </Button>
+          }}
+          onClick={() => saveCanvas()}
+        >
+          save
+        </Button>
+        <Button
+          style={{
+            position: "fixed",
+            bottom: 20,
+            left: 420,
+            color: "grey",
+            zIndex: 14,
+          }}
+          onClick={() => console.log(elements)}
+        >
+          log
+        </Button>
 
-            <Button
-            style={{
+        <Button
+          style={{
             position: "fixed",
             bottom: "50vh",
             left: 5,
             color: "grey",
-            }}
-            onClick={navigateLeft}
-            >
-            ⟵
-            </Button>
-            <Button
-            style={{
+          }}
+          onClick={navigateLeft}
+        >
+          ⟵
+        </Button>
+        <Button
+          style={{
             position: "fixed",
             bottom: "50vh",
             right: 5,
             color: "grey",
-            }}
-            onClick={navigateRight}
-            >
-            ⟶
-            </Button>
-            <Button
-            style={{
+          }}
+          onClick={navigateRight}
+        >
+          ⟶
+        </Button>
+        <Button
+          style={{
             position: "fixed",
             left: "calc(50vw - 32px)",
             top: 5,
             color: "grey",
-            }}
-            onClick={navigateUp}
-            >
-            ↑
-            </Button>
-            <Button
-            style={{
+          }}
+          onClick={navigateUp}
+        >
+          ↑
+        </Button>
+        <Button
+          style={{
             position: "fixed",
             left: "calc(50vw - 32px)",
             bottom: 5,
             color: "grey",
-            }}
-            onClick={navigateDown}
-            >
-            ↓
-            </Button>
-          */}
+          }}
+          onClick={navigateDown}
+        >
+          ↓
+        </Button>
         {showHelp ? (
           <>
             <style jsx>
