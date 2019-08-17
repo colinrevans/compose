@@ -19,10 +19,6 @@ import Inspector from "../components/inspector"
 import InfiniteVexflow from "../components/InfiniteVexflow"
 import "../components/layout.css"
 
-const NAMES_TO_COMPONENTS = {
-  InfiniteVexflow: InfiniteVexflow,
-}
-
 //localStorage.clear()
 
 // in public folder
@@ -88,7 +84,6 @@ const Compose = () => {
   useEffect(() => {
     let saveData = localStorage.getItem("canvas")
     saveData = JSON.parse(saveData)
-    console.log(saveData)
     if (!saveData) return
     saveData = {
       ...saveData,
@@ -99,10 +94,9 @@ const Compose = () => {
       })),
     }
     let { elements, translate } = saveData
-    console.log(elements)
     setElements(elements)
-    idCount = elements[elements.length - 1].id + 1
-    setTranslate(translate)
+    if (elements.length > 0) idCount = elements[elements.length - 1].id + 1
+    if (elements.length > 0) setTranslate(translate)
   }, [])
 
   {
@@ -179,7 +173,6 @@ const Compose = () => {
             src: text.match(/=.+/)[0].substr(1),
           })
         else {
-          console.log("typeof: ", typeof test)
           createElement(InfiniteTextArea, mouse.x, mouse.y, {
             text,
           })
@@ -506,7 +499,7 @@ const Compose = () => {
             position: "fixed",
             top: 20,
             left: 20,
-            color: "grey",
+            color: "lightgrey",
             fontWeight: 300,
             zIndex: 12,
           }}
@@ -519,7 +512,7 @@ const Compose = () => {
             position: "fixed",
             top: 34,
             left: 200,
-            color: "lightgrey",
+            color: "#ededed",
             fontFamily: "sans-serif",
           }}
         >
@@ -1016,7 +1009,6 @@ const InfiniteTextArea = ({ context, id, scale, selected, x, y, ...props }) => {
 }
 
 const MyTextField = props => {
-  console.log(props.text)
   const [text, setText] = useState(props.text ? props.text : "")
   const [hovering, setHovering] = useState(false)
 
@@ -1025,7 +1017,6 @@ const MyTextField = props => {
   }, [])
 
   const onChange = event => {
-    console.log("on change")
     setText(event.target.value)
 
     if (props.distractionFree) return
@@ -1117,4 +1108,12 @@ const MyTextField = props => {
       />
     </>
   )
+}
+
+// so we can JSON stringify/parse the component property of an element,
+// which is a function
+const NAMES_TO_COMPONENTS = {
+  InfiniteVexflow: InfiniteVexflow,
+  InfiniteYoutube: InfiniteYoutube,
+  InfiniteTextArea: InfiniteTextArea,
 }
