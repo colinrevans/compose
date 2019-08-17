@@ -52,6 +52,12 @@ const halfStepToAccidentals = {
   "-2": "bb",
 }
 
+const higher = (n, n2) => {
+  return midiNote(n) > midiNote(n2)
+}
+
+const lower = (n, n2) => !higher(n, n2)
+
 const keyFromMidiNote = n => {
   let octave = Math.floor(n / 12) - 1
   let mod = n % 12
@@ -155,4 +161,5 @@ export default {
   removeDuplicateNotes,
   removeAccidentals,
   clean,
+  higher,
 }

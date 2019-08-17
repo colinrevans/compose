@@ -280,4 +280,17 @@ describe("music-2", () => {
     const fn = music.removeAccidentals
     expect(fn(CMINTRIAD)).toEqual(CMAJTRIAD)
   })
+
+  it("can compare the pitch of notes", () => {
+    const fn = music.higher
+    let middlec = MIDDLEC.keys[0]
+    let dflat5 = DFLAT5.keys[0]
+    let csharp3 = CSHARP3.keys[0]
+    expect(fn(middlec, dflat5)).toBe(false)
+    expect(fn(dflat5, middlec)).toBe(true)
+    expect(fn(csharp3, middlec)).toBe(false)
+    expect(fn(csharp3, { ...csharp3, key: "d" })).toBe(false)
+    expect(fn(csharp3, { ...csharp3, accidental: "" })).toBe(true)
+    expect(fn({ ...dflat5, accidental: "" }, dflat5)).toBe(true)
+  })
 })
