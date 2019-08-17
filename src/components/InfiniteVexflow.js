@@ -5,6 +5,23 @@ import TextField from "@material-ui/core/TextField"
 import empty from "is-empty"
 import m from "../lib/music-2.js"
 
+let toLog = []
+let logging = ""
+const c = (...args) => {
+  if (toLog.includes(logging)) {
+    console.log(...args)
+  }
+}
+const log = x => {
+  if (toLog.includes(x)) {
+    console.log(" ")
+    console.log("logging: ", x)
+    console.log(" ")
+  }
+  logging = x
+}
+const unlog = () => (logging = "")
+
 const last = arr => arr[arr.length - 1]
 
 // keys that are currently pressed.
@@ -15,11 +32,6 @@ let keysDown = {}
 // adds to a chord or creates a new note.
 let lastKeyEventType = null
 let firstPianoRollKey = null
-
-let note = {
-  keys: [{ key: "c", octave: 4, accidental: "" }],
-  duration: "q",
-}
 
 //note creation functions slice
 //these in.
@@ -70,6 +82,8 @@ export const InfiniteVexflow = ({
           ["playback"]: false,
         }
   )
+  // the last command field command. stored so that
+  // the period key can repeat a command, like vim.
   const [lastCommand, setLastCommand] = useState("")
   const [notes, setNotes] = useState(save.notes ? save.notes : [])
   const [showCommandField, setShowCommandField] = useState(false)
@@ -96,19 +110,83 @@ export const InfiniteVexflow = ({
   useEffect(() => {
     const octaveUp = offset => {
       offset = parseInt(offset, 10)
-      setNotes(notes =>
-        notes.map(note => ({
-          ...note,
-          keys: note.keys.map(key => {
-            return { ...key, octave: key.octave + offset }
-          }),
-        }))
-      )
+      noteMap(note => ({
+        ...note,
+        keys: note.keys.map(key => {
+          return { ...key, octave: key.octave + offset }
+        }),
+      }))
     }
 
     const backspace = e => {
       if (e.shiftKey) return
-      setNotes(n => n.slice(0, n.length - 1))
+      let i = notes.length - 1
+      setNotes(n => n.slice(0, i))
+    }
+
+    // maps over the notes and leaves the rest alone.
+    const noteMap = fn => {
+      setNotes(notes =>
+        notes.map(note => (typeof note === "string" ? note : fn(note)))
+      )
+    }
+
+    // from an optimization perspective this is a yucky function.
+    // are there ways to improve? does using it simplify code
+    // but increase its order?
+    const justNotes = (fn, ...args) => {
+      setNotes(notes => {
+        // filters out non-notes, applies the function, puts non-notes back in
+        // ie lets you treat notes as just an array of note objects.
+        // use noteMap if you don't need to slice at all.
+        let objMap = {}
+        let filtered = []
+        for (let i = 0; i < notes.length; i++) {
+          let note = notes[i]
+          if (typeof note === "string") objMap[i] = note
+          else filtered.push(note)
+        }
+        log("justNotes")
+        c("notes", notes)
+        c("objMap", objMap)
+        c("length: ", Object.keys(objMap).length)
+        c("filtered", filtered)
+        c("filtered length", filtered.length)
+
+        filtered = fn(filtered, ...args)
+
+        c("after filter", filtered)
+        c("after filter length", filtered.length)
+
+        let res = []
+        let idxOffset = 0
+        c("objMapLength: ", Object.keys(objMap).length)
+        c("total length: ", filtered.length + Object.keys(objMap).length)
+        for (let i = 0; i < filtered.length + Object.keys(objMap).length; i++) {
+          c()
+          c(i, ":")
+          c(Object.keys(objMap))
+          if (Object.keys(objMap).includes(i.toString())) {
+            c("pushing a nonnote: ", objMap[i.toString()])
+            res.push(objMap[i.toString()])
+            idxOffset += 1
+          } else {
+            if (filtered[i - idxOffset] === undefined) {
+              c("pushing a note: undefined. skipping")
+              continue
+            }
+            c("pushing a note: ", filtered[i - idxOffset])
+            res.push(filtered[i - idxOffset])
+          }
+        }
+        while (idxOffset < Object.keys(objMap).length) {
+          res.push(objMap[Object.keys(objMap)[idxOffset]])
+          idxOffset += 1
+        }
+        c("res", res)
+        unlog()
+        return res
+      })
     }
 
     const octaveDown = offset => octaveUp(offset * -1)
@@ -116,24 +194,27 @@ export const InfiniteVexflow = ({
     // makes a chord of all notes since the last chord (if n undefined)
     // or of n last notes
     const chordify = n => {
-      let idxOfFirstNoteToChordify = 0
-      if (n === undefined) {
-        for (let i = 0; i < notes.length; i++) {
-          if (notes[i].keys.length > 1) idxOfFirstNoteToChordify = i + 1
+      let fn = (notes, n) => {
+        let idxOfFirstNoteToChordify = 0
+        if (n === undefined) {
+          for (let i = 0; i < notes.length; i++) {
+            if (notes[i].keys.length > 1) idxOfFirstNoteToChordify = i + 1
+          }
+          if (idxOfFirstNoteToChordify >= notes.length)
+            idxOfFirstNoteToChordify = notes.length - 2
+        } else {
+          idxOfFirstNoteToChordify = notes.length - n
         }
-        if (idxOfFirstNoteToChordify >= notes.length)
-          idxOfFirstNoteToChordify = notes.length - 2
-      } else {
-        idxOfFirstNoteToChordify = notes.length - n
+        let keys = []
+        for (let note of notes.slice(idxOfFirstNoteToChordify)) {
+          keys = [...keys, ...note.keys]
+        }
+        return [
+          ...notes.slice(0, idxOfFirstNoteToChordify),
+          m.clean({ keys, duration: notes[0].duration }),
+        ]
       }
-      let keys = []
-      for (let note of notes.slice(idxOfFirstNoteToChordify)) {
-        keys = [...keys, ...note.keys]
-      }
-      setNotes(notes => [
-        ...notes.slice(0, idxOfFirstNoteToChordify),
-        m.clean({ keys, duration: notes[0].duration }),
-      ])
+      justNotes(fn, n)
     }
 
     const duplicate = n => {
@@ -169,6 +250,10 @@ export const InfiniteVexflow = ({
         ...notes.slice(0, notes.length - 1),
         m.sortVerticality({ ...lastNote, keys: newKeys }),
       ])
+    }
+
+    const addBarline = () => {
+      setNotes(notes => [...notes, "BARLINE"])
     }
 
     const plane = up => {
@@ -270,6 +355,10 @@ export const InfiniteVexflow = ({
         keys: [/r/, /\d/],
         fn: x => repeat(x),
       },
+      "add barline": {
+        keys: [/b/],
+        fn: () => addBarline(),
+      },
       "repeat last note:": {
         keys: [/r/, /r/],
         fn: () => repeat(1),
@@ -346,6 +435,10 @@ export const InfiniteVexflow = ({
         key: /\s/,
         fn: () => toggleCommandField(),
       },
+      "new bar": {
+        key: /n/,
+        fn: () => addBarline(),
+      },
       "log notes": {
         key: /`/,
         fn: () => console.log(notes),
@@ -387,7 +480,8 @@ export const InfiniteVexflow = ({
     const onKeyDown = e => {
       if (id !== context.lastInteractedElemId) return
       if (!context.noteMode) return
-      console.log(e.key)
+      log("onKeyDown")
+      c(e.key)
 
       const capture = () => {
         e.captured = true
@@ -402,16 +496,18 @@ export const InfiniteVexflow = ({
             command.commandField === showCommandField
           ) {
             command.fn(e)
-            console.log("COMMAND: ", key)
+            c("COMMAND: ", key)
             if (!command.noCapture) capture()
           }
         }
       }
       keysDown[e.key] = true
       lastKeyEventType = "down"
+      unlog()
     }
 
     const onKeyUp = e => {
+      log("onKeyUp")
       delete keysDown[e.key]
       if (showCommandField) {
         for (let key of Object.keys(commandFieldCommands)) {
@@ -421,7 +517,7 @@ export const InfiniteVexflow = ({
             commandKeys.length === command.keys.length
           ) {
             command.fn(last(commandKeys))
-            console.log("COMMAND FIELD COMMAND: ", key)
+            c("COMMAND FIELD COMMAND: ", key)
             setCommandKeys([])
             setShowCommandField(false)
             setLastCommand({ name: key, arg: last(commandKeys) })
@@ -430,6 +526,7 @@ export const InfiniteVexflow = ({
       }
       lastKeyEventType = "up"
       if (e.key === firstPianoRollKey) firstPianoRollKey = null
+      unlog()
     }
 
     window.addEventListener("keydown", onKeyDown, true)
@@ -476,7 +573,6 @@ export const InfiniteVexflow = ({
       )
     }
 
-    let now = new Date()
     if (firstPianoRollKey === null || lastKeyEventType === null) {
       setNotes(notes => [...notes, note])
       sound()
@@ -497,43 +593,69 @@ export const InfiniteVexflow = ({
     // instead keep a renderer in state? useEffect would then
     // only do a new VF.StaveNote(...) and vfNote.addAccidental(...)
     // if necessary
+    log("renderVexflow")
     try {
       const VF = require("vexflow").Flow
       const div = document.getElementById(`vex-${id}`)
-      const renderer = new VF.Renderer(div, VF.Renderer.Backends.SVG)
-      renderer.resize(notes.length * 30 + 100, 200)
-      const context = renderer.getContext()
-      const stave = new VF.Stave(10, 40, notes.length * 30 + 100)
-      stave.addClef("treble")
-      stave.setContext(context).draw()
+      var renderer = new VF.Renderer(div, VF.Renderer.Backends.SVG)
+      renderer.resize(800, 200)
+      var ctx = renderer.getContext()
+      c("notes: ", notes)
+      let measures = []
 
-      if (notes.length > 0) {
-        const staveNotes = notes.map(n => {
-          let accidentalList = []
-          for (let i = 0; i < n.keys.length; i++) {
-            let key = n.keys[i]
-            if (key.accidental)
-              accidentalList.push({ idx: i, accidental: key.accidental })
-          }
-          let keysInVexflowFormat = n.keys.map(
-            key => `${key.key}${key.accidental}/${key.octave}`
-          )
-          let vfNote = new VF.StaveNote({
-            clef: "treble",
-            ...n,
-            keys: keysInVexflowFormat,
+      // ie measures =  notes.split("BARLINE"), if notes were a string.
+      let idx = 0
+      for (let note of notes) {
+        if (measures[idx] === undefined) measures.push([])
+        if (note === "BARLINE") {
+          idx += 1
+        } else {
+          measures[idx].push(note)
+        }
+      }
+      if (notes[notes.length - 1] === "BARLINE") measures.push([])
+      c("measures: ", measures)
+
+      // make measures a list of vexflow musical objects
+      measures = measures.map(measure => {
+        if (measure.length > 0) {
+          const staveNotes = measure.map(n => {
+            let accidentalList = []
+            for (let i = 0; i < n.keys.length; i++) {
+              let key = n.keys[i]
+              if (key.accidental)
+                accidentalList.push({ idx: i, accidental: key.accidental })
+            }
+            let keysInVexflowFormat = n.keys.map(
+              key => `${key.key}${key.accidental}/${key.octave}`
+            )
+            let vfNote = new VF.StaveNote({
+              clef: "treble",
+              ...n,
+              keys: keysInVexflowFormat,
+            })
+            for (let { idx, accidental } of accidentalList) {
+              vfNote = vfNote.addAccidental(idx, new VF.Accidental(accidental))
+            }
+            return vfNote
           })
-          for (let { idx, accidental } of accidentalList) {
-            vfNote = vfNote.addAccidental(idx, new VF.Accidental(accidental))
-          }
-          return vfNote
-        })
-        const voice = new VF.Voice({ num_beats: notes.length, beat_value: 4 })
-        voice.addTickables(staveNotes)
-        const formatter = new VF.Formatter()
-          .joinVoices([voice])
-          .format([voice], notes.length * 30)
-        voice.draw(context, stave)
+          return staveNotes
+        } else {
+          return []
+        }
+      })
+
+      c("measures, as vexflow objects: ", measures)
+      if (measures.length === 0) measures = [[]]
+      for (let i = 0; i < measures.length; i++) {
+        let measure = measures[i]
+        let stave = new VF.Stave(10 + i * 300, 0, 300)
+        if (i === 0) {
+          stave.addClef("treble")
+        }
+        stave.setContext(ctx).draw()
+
+        VF.Formatter.FormatAndDraw(ctx, stave, measure)
       }
 
       // parse the svg elements that vexflow creates
@@ -541,6 +663,7 @@ export const InfiniteVexflow = ({
     } catch (err) {
       console.log("vexflow error: ", err)
     }
+    unlog()
   }
 
   const triggerPlayback = () => {
@@ -600,6 +723,8 @@ export const InfiniteVexflow = ({
             position: "fixed",
             bottom: 20,
             left: window.innerWidth / 2 - 50,
+            backgroundColor: "white",
+            zIndex: 500,
           }}
           value={
             empty(commandKeys)
