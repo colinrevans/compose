@@ -2,4 +2,4 @@
   Compose
 </h1>
 
-An Infinite Canvas app tailored to music notation and analysis.
+An infinite canvas app for music notation and analysis.
