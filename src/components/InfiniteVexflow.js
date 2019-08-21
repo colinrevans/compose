@@ -419,7 +419,7 @@ export const InfiniteVexflow = ({
       else
         addNoteToEnd({
           keys: [{ octave, accidental: "", ...keysToNotes[e.key] }],
-          duration: "8",
+          duration: "q",
         })
       if (firstPianoRollKey === null) firstPianoRollKey = e.key
     }
