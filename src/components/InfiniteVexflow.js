@@ -256,6 +256,10 @@ export const InfiniteVexflow = ({
       setNotes(notes => [...notes, "BARLINE"])
     }
 
+    const addLineBreak = () => {
+      setNotes(notes => [...notes, "LINEBREAK"])
+    }
+
     const plane = up => {
       let fn
       if (up) fn = m.planeUp
@@ -415,7 +419,7 @@ export const InfiniteVexflow = ({
       else
         addNoteToEnd({
           keys: [{ octave, accidental: "", ...keysToNotes[e.key] }],
-          duration: "q",
+          duration: "8",
         })
       if (firstPianoRollKey === null) firstPianoRollKey = e.key
     }
@@ -436,8 +440,12 @@ export const InfiniteVexflow = ({
         fn: () => toggleCommandField(),
       },
       "new bar": {
-        key: /n/,
+        key: /^n$/,
         fn: () => addBarline(),
+      },
+      "line break": {
+        key: /Enter/,
+        fn: () => addLineBreak(),
       },
       "log notes": {
         key: /`/,
@@ -647,6 +655,7 @@ export const InfiniteVexflow = ({
 
       c("measures, as vexflow objects: ", measures)
       if (measures.length === 0) measures = [[]]
+      renderer.resize(20 + 300 * measures.length, 200)
       for (let i = 0; i < measures.length; i++) {
         let measure = measures[i]
         let stave = new VF.Stave(10 + i * 300, 0, 300)
