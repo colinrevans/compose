@@ -37,10 +37,18 @@ let idCount = 0
 const ComposeContext = React.createContext({})
 
 const Compose = () => {
-  const [mouse, setMouse] = useState({
-    x: window ? window.innerWidth / 2 : 0,
-    y: window ? window.innerHeight / 2 : 0,
-  })
+  // this is cumbersome but necessary for Gatsby Build to work
+  let mouseX = null
+  let mouseY = null
+  try {
+    mouseX = window.innerWidth / 2
+    mouseY = window.innerHeight / 2
+  } catch (err) {
+    mouseX = 0
+    mouseY = 0
+  }
+  const [mouse, setMouse] = useState({ x: mouseX, y: mouseY })
+
   const [translate, setTranslate] = useState({ x: 0, y: 0 })
   const [zoom, setZoom] = useState({ scale: 1 })
   const [elements, setElements] = useState([])
