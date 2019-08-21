@@ -38,8 +38,8 @@ const ComposeContext = React.createContext({})
 
 const Compose = () => {
   const [mouse, setMouse] = useState({
-    x: window.innerWidth / 2,
-    y: window.innerHeight / 2,
+    x: window ? window.innerWidth / 2 : 0,
+    y: window ? window.innerHeight / 2 : 0,
   })
   const [translate, setTranslate] = useState({ x: 0, y: 0 })
   const [zoom, setZoom] = useState({ scale: 1 })
