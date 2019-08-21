@@ -180,6 +180,20 @@ const Compose = () => {
       })
       .catch(err => console.log)
   }
+  const alignSelected = () => {
+    setElements(elems => {
+      let ids = elems.filter(elem => elem.selected).map(elem => elem.id)
+      let firstX = null
+      return elems.map(elem => {
+        if (ids.includes(elem.id)) {
+          if (firstX === null) {
+            firstX = elem.x
+            return elem
+          } else return { ...elem, x: firstX }
+        } else return elem
+      })
+    })
+  }
 
   {
     /* COMMANDS */
@@ -254,6 +268,11 @@ const Compose = () => {
     "zoom out mode": {
       fn: () => setZoomMode(zm => (zm !== -1 ? -1 : 0)),
       keys: [16, 90],
+      mode: "canvas",
+    },
+    "align vertically": {
+      fn: () => alignSelected(),
+      keys: ["meta", 65],
       mode: "canvas",
     },
     "initiate zoom": {
@@ -906,7 +925,7 @@ const InfiniteTextArea = ({ context, id, scale, selected, x, y, ...props }) => {
   const [options, setOptions] = useState({
     scale: 1 / scale,
     color: "black",
-    resizable: false,
+    resizable: true,
     ["distraction free"]: false,
     ["no critic"]: false,
   })
@@ -990,9 +1009,8 @@ const InfiniteTextArea = ({ context, id, scale, selected, x, y, ...props }) => {
             left: options["distraction free"] && selected ? 0 : viewportX - 80,
             transform: `scale(${context.zoom.scale / (1 / options.scale)})`,
             backgroundColor: "white",
-            minHeight:
-              options["distraction free"] && selected ? "100vh" : "100px",
-            minWidth:
+            height: options["distraction free"] && selected ? "100vh" : "100px",
+            width:
               options["distraction free"] && selected
                 ? context.inspecting
                   ? "70vw"
@@ -1038,7 +1056,7 @@ const MyTextField = props => {
       <style jsx>{`
         p {
           margin-bottom: 0px;
-          max-width: ${props.distractionFree
+          width: ${props.distractionFree
             ? props.context.inspecting
               ? "70vw"
               : "100vw"
@@ -1084,13 +1102,7 @@ const MyTextField = props => {
             if (props.context.zoomMode === -1) return "zoom-out"
             if (props.context.zoomMode === 0) return "text"
           })(),
-          border: `1px solid ${
-            props.selected
-              ? "grey"
-              : hovering || empty(text)
-              ? "#ededed"
-              : "white"
-          }`,
+          border: `1px solid ${props.selected ? "grey" : "white"}`,
           lineHeight: "120%",
           resize: props.resizable ? "both" : "none",
           marginBottom: 0,
