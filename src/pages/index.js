@@ -4,9 +4,12 @@ import { Link, graphql } from "gatsby"
 import Layout from "../components/layout"
 import Image from "../components/image"
 import SEO from "../components/seo"
+import Compose from "./compose"
 
 const IndexPage = ({ data }) => {
   const { edges: posts } = data.allSitePage
+  // temporarily reroute to compose app proper.
+  return <Compose />
   return (
     <Layout>
       <SEO title="Home" />
