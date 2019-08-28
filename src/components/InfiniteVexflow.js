@@ -724,6 +724,12 @@ export const InfiniteVexflow = ({
         <Inspector options={options} setOptions={setOptions} />
       ) : null}
 
+      {id === context.lastInteractedElemId && context.noteMode ? (
+        <div style={{ top: 20, right: 20, position: "fixed", color: "grey" }}>
+          insert note mode
+        </div>
+      ) : null}
+
       {showCommandField ? (
         <TextField
           className="noselect"
