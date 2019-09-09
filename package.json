@@ -53,7 +53,8 @@
     "format": "prettier --write src/**/*.{js,jsx}",
     "start": "npm run develop",
     "serve": "gatsby serve",
-    "test": "jest --watch"
+    "test": "jest --watch",
+    "fulltest": "jest -e --watch"
   },
   "repository": {
     "type": "git",

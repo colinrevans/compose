@@ -16,7 +16,7 @@ import {
   deleteElementById,
 } from "../lib/infinite-util"
 import Inspector from "../components/inspector"
-import InfiniteVexflow from "../components/InfiniteVexflow"
+import InfiniteVexflow from "../components/InfiniteVexflow2"
 import "../components/layout.css"
 
 //localStorage.clear()

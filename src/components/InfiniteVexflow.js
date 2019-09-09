@@ -5,7 +5,7 @@ import TextField from "@material-ui/core/TextField"
 import empty from "is-empty"
 import m from "../lib/music-2.js"
 
-let toLog = []
+let toLog = ["renderVexflow"]
 let logging = ""
 const c = (...args) => {
   if (toLog.includes(logging)) {
@@ -23,6 +23,15 @@ const log = x => {
 const unlog = () => (logging = "")
 
 const last = arr => arr[arr.length - 1]
+// apply fn to all 'leaves' of HTML element
+const applyToChildren = (fn, elem) => {
+  if (elem === undefined) return
+  if (elem.children.length > 0) {
+    for (let i = 0; i < elem.children.length; i++) {
+      applyToChildren(fn, elem.children[i])
+    }
+  } else fn(elem)
+}
 
 // keys that are currently pressed.
 // used to reliably suppress key repeats when necessary
@@ -645,6 +654,7 @@ export const InfiniteVexflow = ({
             for (let { idx, accidental } of accidentalList) {
               vfNote = vfNote.addAccidental(idx, new VF.Accidental(accidental))
             }
+            c("vfNote id: ", vfNote.attrs.id)
             return vfNote
           })
           return staveNotes
@@ -665,6 +675,22 @@ export const InfiniteVexflow = ({
         stave.setContext(ctx).draw()
 
         VF.Formatter.FormatAndDraw(ctx, stave, measure)
+        for (let staveNote of measure) {
+          console.log(staveNote.attrs.id)
+          const elem = document.getElementById(`vf-${staveNote.attrs.id}`)
+          elem.addEventListener(
+            "click",
+            e => {
+              console.log(e)
+              console.log(elem)
+              applyToChildren(x => {
+                x.style.fill = "blue"
+                x.style.stroke = "blue"
+              }, elem)
+            },
+            false
+          )
+        }
       }
 
       // parse the svg elements that vexflow creates
