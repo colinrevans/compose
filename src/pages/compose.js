@@ -468,6 +468,7 @@ const Compose = () => {
         saveCanvas,
         octave,
         noteMode,
+        setNoteMode,
       }}
     >
       {elements.every(elem => !elem.selected) && inspecting ? (

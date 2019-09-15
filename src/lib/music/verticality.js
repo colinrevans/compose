@@ -1,6 +1,7 @@
 import { uniq } from "ramda"
 import Note from "./note"
 import { isTemporal } from "./util"
+import Rest from "./rest"
 import Duration from "./duration"
 
 /**
@@ -84,6 +85,12 @@ class Verticality {
     this.owner.addAfterIdx(temporal, this.owner.indexOf(this.canonical))
   }
 
+  insertBefore(temporal) {
+    if (!this.owner)
+      throw new Error("Verticality has no owner. Insert impossible.")
+    this.owner.addBeforeIdx(temporal, this.owner.indexOf(this.canonical))
+  }
+
   setDOMId(id) {
     this.DOMId = id
     return this
@@ -100,13 +107,24 @@ class Verticality {
     return this
   }
 
+  isChord() {
+    return this.notes.length > 1
+  }
+
+  isCanonical() {
+    return this === this.canonical
+  }
+
+  turnIntoRest() {
+    let rest = new Rest(this.duration.copy())
+    rest.makeCurrent = true
+    this.canonical.insertBefore(rest)
+    this.deleteFromOwningVoice()
+  }
+
   deleteFromOwningVoice(addMakeCurrentFlag = false) {
     if (!this.owner)
       throw new Error("Verticality has no owner. Delete impossible.")
-    if (this.owner.temporals.length === 1) {
-      if (addMakeCurrentFlag) this.canonical.makeCurrent = true
-      return
-    }
     if (this === this.canonical) {
       // this verticality isn't the result of an algorithm splitting notes
       // as, eg, when making a half note across a barline a quarter tied
@@ -140,6 +158,11 @@ class Verticality {
     }
   }
 
+  asCurrent() {
+    this.makeCurrent = true
+    return this
+  }
+
   durationAccordingToTimeSignature(sig) {
     return this.duration.durationAccordingToTimeSignature(sig)
   }
@@ -148,8 +171,27 @@ class Verticality {
     this.DOMId = id
   }
 
+  copy() {
+    return new Verticality(this.notes.map(n => n.copy()), this.duration.copy())
+  }
+
   durationAccordingToTimeSignatureAsRational(sig) {
     return this.duration.durationAccordingToTimeSignatureAsRational(sig)
+  }
+
+  invertUp() {
+    let [toInvert, ...unchanged] = this.notes
+    toInvert = toInvert.withOctaveAdjustedBy(1)
+    this.notes = [...unchanged, toInvert]
+    return this
+  }
+
+  invertDown() {
+    let unchanged = this.notes.slice(0, this.notes.length - 1)
+    let toInvert = this.notes[this.notes.length - 1]
+    toInvert = toInvert.withOctaveAdjustedBy(-1)
+    this.notes = [toInvert, ...unchanged]
+    return this
   }
 
   invertedUp() {
@@ -254,6 +296,14 @@ class Verticality {
       .map(note => note.toString())
       .toString()
       .replace(/,/g, " ")}] ${this.duration}`
+  }
+
+  toJSON() {
+    return {
+      type: "verticality",
+      notes: this.notes.map(n => n.toJSON()),
+      duration: this.duration.toJSON(),
+    }
   }
 }
 

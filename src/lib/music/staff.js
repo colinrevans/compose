@@ -91,6 +91,13 @@ class Staff {
     return this.splitVoices()
   }
 
+  get empty() {
+    if (this.voices.length === 0) return true
+    if (this.voices.length === 1 && this.voices[0].temporals.length === 0)
+      return true
+    return false
+  }
+
   splitVoices() {
     let splittedVoices = this.voices.map(v => this.splitVoice(v, v.position))
     let ret = []
@@ -119,6 +126,13 @@ class Staff {
   }
 
   splitVoice(voice, startingPos) {
+    if (voice.temporals.length === 0) {
+      return {
+        timeSignature: new TimeSignature(4, 4),
+        owner: voice,
+        voice: new Voice([]).at(startingPos),
+      }
+    }
     let log
     if (voice.temporals[0].notes)
       if (voice.temporals[0].notes[0].toString() === "E6") {
@@ -129,6 +143,9 @@ class Staff {
     if (!(voice instanceof Voice))
       throw new TypeError("splitVoice method requires a Voice")
     if (!startingPos) startingPos = voice.position ? voice.position : 0
+    // ensure links don't link off to nothin
+    voice.temporals[0].prev = null
+    voice.temporals[voice.temporals.length - 1].next = null
 
     let curPos = new Rational(0, 1)
     let splitVoices = []
@@ -212,7 +229,6 @@ class Staff {
         } else if (temporal instanceof Rest)
           firstTemporal = new Rest(preDuration)
         firstTemporal.canonical = temporal
-        firstTemporal.makeCurrent = temporal.makeCurrent
         let secondTemporal
         if (temporal instanceof Verticality) {
           secondTemporal = new Verticality(temporal.notes, postDuration)
@@ -226,6 +242,12 @@ class Staff {
         let prevTemporal = currentMeasure[currentMeasure.length - 1]
         prevTemporal.next = firstTemporal
         firstTemporal.prev = prevTemporal
+
+        if (!temporal.makeFormerCurrent && !temporal.makeLatterCurrent)
+          secondTemporal.makeCurrent = temporal.makeCurrent
+        else if (temporal.makeFormerCurrent) firstTemporal.makeCurrent = true
+        else if (temporal.makeLatterCurrent) secondTemporal.makeCurrent = true
+
         currentMeasure = [...currentMeasure, firstTemporal]
         let newVoice = new Voice([...currentMeasure])
         currentMeasure = [secondTemporal]
@@ -241,20 +263,23 @@ class Staff {
     }
     if (log) console.log(currentMeasure)
     if (!empty(currentMeasure)) {
-      // we've got some stragglers. add the final measure w/ rests at the end
+      // we've got some stragglers. add em w/ a rest at the end
+      // to complete the measure.
       let coveredDuration = currentMeasure
         .map(temp => temp.duration)
         .reduce((a, b) => a.plus(b))
       let restLength = new Duration(sig.numerator).minus(coveredDuration)
+      let newRest = new Rest(restLength)
+      newRest.prev = currentMeasure[currentMeasure.length - 1]
+      newRest.filler = true
+      currentMeasure[currentMeasure.length - 1].next = newRest
       if (log) console.log("leftovers")
       splitVoices = [
         ...splitVoices,
         {
           timeSignature: sig,
           owner: voice,
-          voice: new Voice([...currentMeasure, new Rest(restLength)]).at(
-            splitVoices.length
-          ),
+          voice: new Voice([...currentMeasure, newRest]).at(splitVoices.length),
         },
       ]
     }
@@ -268,6 +293,22 @@ class Staff {
       first(splitVoices[i].voice.temporals).prev = last(
         splitVoices[i - 1].voice.temporals
       )
+    }
+
+    // add positions
+    for (let i = 0; i < splitVoices.length; i++) {
+      /*      console.log(
+        "BATCH: ",
+        splitVoices[i].voice.temporals.map(t => t.toString())
+      )
+      */
+      let temporals = splitVoices[i].voice.temporals
+      for (let t of temporals) t.position = startingPos + i
+      /*     console.log(
+        "Batch positions: ",
+        splitVoices[i].voice.temporals.map(t => t.position)
+      )
+      */
     }
     if (log) splitVoices.forEach(v => console.log(v.voice.toString()))
     return splitVoices
@@ -301,6 +342,11 @@ class Staff {
     }
 
     return true
+  }
+
+  add(ent) {
+    this.entities = [...this.entities, ent]
+    return this
   }
 
   timeSignatureOfNthMeasure(n) {

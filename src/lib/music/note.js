@@ -34,9 +34,21 @@ const noteStrToMidiNoteNumber = str => {
   )
 }
 
+const midiNoteNumberToNoteString = n => {
+  const octave = Math.floor((n - 12) / 12)
+  console.log(octave)
+  const pc = n % 12
+  console.log(`${pcsToLetters[pc]}${octave}`)
+  return `${pcsToLetters[pc]}${octave}`
+}
+
 class Note {
   constructor(note, accidental, octave) {
     if (accidental === undefined && octave === undefined) {
+      if (typeof note === "number") {
+        note = midiNoteNumberToNoteString(note)
+      }
+
       if (typeof note === "string") {
         // input is "C#4" or similar
         let noteStr = note
@@ -52,7 +64,7 @@ class Note {
       // note, accidental, and octave are split amongst arguments
       this.note = note
       this.accidental = accidental
-      this.octave = octave
+      this.octave = octave ? octave : 4
     }
   }
 
@@ -72,6 +84,10 @@ class Note {
   }
 
   get note() {
+    return this._note
+  }
+
+  get letter() {
     return this._note
   }
 
@@ -97,10 +113,19 @@ class Note {
 
   get enharmonic() {
     if (this.accidental === "") return this
+    console.log(enharmonics[this.toString()])
     if (Object.keys(enharmonics).includes(this.toString())) {
       return this.reset(enharmonics[this.toString()])
     }
     return this
+  }
+
+  toEnharmonic() {
+    return this.enharmonic
+  }
+
+  copy() {
+    return new Note(this.note, this.accidental, this.octave)
   }
 
   set octave(octave) {
@@ -122,6 +147,15 @@ class Note {
 
   toString() {
     return `${this.note}${this.accidental}${this.octave}`
+  }
+
+  toJSON() {
+    return {
+      type: "note",
+      letter: this.letter,
+      accidental: this.accidental,
+      octave: this.octaveve,
+    }
   }
 }
 
@@ -171,4 +205,19 @@ const accidentalsToChromaticHalfSteps = {
   "##": 2,
   bb: -2,
   n: 0,
+}
+
+const pcsToLetters = {
+  0: "C",
+  1: "C#",
+  2: "D",
+  3: "D#",
+  4: "E",
+  5: "F",
+  6: "F#",
+  7: "G",
+  8: "G#",
+  9: "A",
+  10: "Bb",
+  11: "B",
 }

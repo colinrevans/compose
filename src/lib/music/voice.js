@@ -8,6 +8,13 @@ import { TimingError } from "./errors"
 // a voice is more or less a list of temporals (verticalities or rests)
 //
 
+class NotInVoiceError extends Error {
+  constructor(...args) {
+    super(...args)
+    this.name = "NotInVoiceError"
+  }
+}
+
 // helper function to add next + prev links to a list of verticalities
 const linkTemporals = temporalArray => {
   if (temporalArray.length === 0) return temporalArray
@@ -65,6 +72,14 @@ class Voice {
     return new Voice(merged)
   }
 
+  duplicate() {
+    let tempsAtStart = [...this.temporals]
+    for (let temp of tempsAtStart) {
+      this.add(temp.copy())
+    }
+    return this
+  }
+
   get beats() {
     return this.temporals.map(temp => temp.duration).reduce((a, b) => a + b)
   }
@@ -90,7 +105,7 @@ class Voice {
       .reduce((a, b) => a + b)
   }
 
-  withoutNthTempicality(n) {
+  withoutNthTemporal(n) {
     if (n >= this.temporals.length) throw new RangeError("access out of bounds")
     // negative goes from the end
     if (n < 0) n = this.temporals.length - (Math.abs(n) % this.temporals.length)
@@ -186,13 +201,30 @@ class Voice {
     }
   }
 
+  addBeforeIdx(temporal, idx) {
+    if (!isTemporal(temporal))
+      throw new TypeError("cannot add a non-temporal to a voice")
+    if (idx < 0 || idx >= this.temporals.length)
+      throw new RangeError("invalid index into voice")
+    if (idx === 0) {
+      let first = this.temporals[0]
+      first.prev = temporal
+      temporal.next = first
+      temporal.makeCurrent = true
+      this.temporals = [temporal, ...this.temporals]
+    } else {
+      this.addAfterIdx(temporal, idx - 1)
+    }
+  }
+
   deleteAtIdx(idx, addMakeCurrentFlag = false) {
     if (idx < 0 || idx >= this.temporals.length)
       throw new RangeError("invalid index into voice")
     if (idx === 0) {
       this.temporals = this.temporals.slice(1)
-      this.temporals[0].prev = null
-      if (addMakeCurrentFlag) this.temporals[0].makeCurrent = true
+      if (this.temporals.length > 1) {
+        this.temporals[0].prev = null
+      }
     } else if (idx === this.temporals.length - 1) {
       this.temporals = this.temporals.slice(0, this.temporals.length - 1)
       this.temporals[this.temporals.length - 1].next = null
@@ -207,6 +239,10 @@ class Voice {
       ]
       if (addMakeCurrentFlag) this.temporals[idx - 1].makeCurrent = true
     }
+    // guarantee that links don't leap to dummy rests
+    // that're added during rendering to fill incomplete
+    // measures
+    this.temporals[this.temporals.length - 1].next = null
     return this
   }
 
@@ -215,7 +251,9 @@ class Voice {
     for (let i = 0; i < this.temporals.length; i++) {
       if (this.temporals[i] === temporal) return i
     }
-    throw Error("temporal not found in indexOf. probably an error!")
+    throw new NotInVoiceError(
+      "temporal not found in indexOf. probably an error!"
+    )
   }
 
   deleteNFromEnd(n) {
@@ -234,6 +272,14 @@ class Voice {
 
   toString() {
     return `[ ${this.temporals.map(temp => temp.toString()).join(" | ")} ]`
+  }
+
+  toJSON() {
+    return {
+      type: 'voice',
+      temporals: this.temporals.map(temp => temp.toJSON()),
+      position: this.position,
+    }
   }
 }
 

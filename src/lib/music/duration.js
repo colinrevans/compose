@@ -78,6 +78,15 @@ class Duration {
     return new Duration(res.numerator, res.denominator)
   }
 
+  times(other) {
+    let res = this.duration.times(other.duration)
+    return new Duration(res.numerator, res.denominator)
+  }
+
+  copy() {
+    return new Duration(this.duration.numerator, this.duration.denominator)
+  }
+
   equals(other) {
     if (!(other instanceof Duration))
       throw new TypeError("Duration equality requires another Duration.")
@@ -105,6 +114,14 @@ class Duration {
 
   toString() {
     return this.duration.toString()
+  }
+
+  toJSON() {
+    return {
+      type: "duration",
+      numerator: this.duration.numerator,
+      denominator: this.duration.denominator,
+    }
   }
 
   // TODO

@@ -52,6 +52,10 @@ class Rest {
     return this._prev
   }
 
+  copy() {
+    return new Rest(this.duration.copy())
+  }
+
   insertAfter(temporal) {
     if (!this.owner) throw new Error("Rest has no owner. Insert impossible.")
     this.owner.addAfterIdx(temporal, this.owner.indexOf(this.canonical))
@@ -108,8 +112,15 @@ class Rest {
     return this.duration.valueOf()
   }
 
-  get toString() {
+  toString() {
     return `rest : ${this.duration}`
+  }
+
+  toJSON() {
+    return {
+      type: 'rest',
+      duration: this.duration.toJSON()
+    }
   }
 }
 

@@ -9,6 +9,15 @@ class TimeSignature extends Rational {
   get vexflowRepresentation() {
     return `${this.numerator}/${this.denominator}`
   }
+
+  toJSON() {
+    return {
+      type: "time-signature",
+      position: this.position,
+      numerator: this.numerator,
+      denominator: this.denominator,
+    }
+  }
 }
 
 export default TimeSignature
