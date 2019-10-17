@@ -599,7 +599,6 @@ export const InfiniteVexflow = ({
 
   const replaceCurrent = key => {
     if (!getCurrent()) return
-    console.log("asdf")
     console.log(key)
     console.log(pianoRollKeysToNotes[key])
     let { letter, accidental, octaveAdjust } = pianoRollKeysToNotes[key]
@@ -1322,25 +1321,15 @@ export const InfiniteVexflow = ({
       onTemporalClick(tickable),
       false
     )
-    console.log("tickable el", tickable.attrs.el)
     let c = 0
     for (let staveNote of tickable.attrs.el.children) {
       for (let note of staveNote.children) {
-        console.log("note", note)
         if (note.getAttribute("class") === "vf-notehead") {
           let a = c
           note.addEventListener(
             "click",
             () => {
               //note.children[0].style.fill = "maroon"
-              console.log(
-                `note ${a} of `,
-                tickable,
-                `id ${tickable.attrs.id}`,
-                `note ${tickable.keys[a]}`,
-                `DOMIDSTO`,
-                DOMIdsToVexflows[id][tickable.attrs.id]
-              )
               DOMIdsToVexflows[id][tickable.attrs.id].selected = true
               SETCURRENT(tickable.attrs.id)
               setPreCurrent(false)

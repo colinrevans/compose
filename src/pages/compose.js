@@ -515,17 +515,12 @@ const Compose = () => {
           })(),
         }}
         onMouseUp={e => {
-          console.log("up. dragging: ", dragging)
           const shift = (orig, by) => {
-            console.log("shift ", orig, " by ", by)
-            console.log("zoom scale: ", zoom.scale)
-            console.log("got ", orig + by / zoom.scale)
             return orig + by / zoom.scale
           }
           let cp = dragging
           setElements(es =>
             es.map(elem => {
-              console.log("elem", elem, "dragging", cp)
               return elem.id == cp.id
                 ? {
                     ...elem,
@@ -548,6 +543,7 @@ const Compose = () => {
             position: "fixed",
             left: "calc(50vw - 1px)",
             top: "calc(50vh - 1px)",
+            zIndex: 2000,
           }}
         />
         <h1
@@ -626,6 +622,12 @@ const Compose = () => {
         >
           save
         </Button>
+        <Link
+          to="/"
+          style={{ position: "fixed", top: 1, left: 1, fontSize: 8 }}
+        >
+          home
+        </Link>
         <Button
           style={{
             position: "fixed",
@@ -969,14 +971,39 @@ const InfiniteYoutube = ({ context, scale, x, y, id, selected, ...props }) => {
   )
 }
 
-const InfiniteTextArea = ({ context, id, scale, selected, x, y, ...props }) => {
+const selection = (e, id, context, selected) => {
+  if (!context.zoomMode) {
+    e.stopPropagation()
+    if (selected && !context.inspecting)
+      setElementPropertyById(id, context, "selected", false)
+    if (selected && context.inspecting) context.setLastInteractedElemId(id)
+    if (!selected) {
+      if (e.shiftKey) setElementPropertyById(id, context, "selected", true)
+      else selectElementAndDeselectRest(id, context)
+      context.setLastInteractedElemId(id)
+    }
+  }
+}
+
+const inspectorForElement = (id, context, selected, options, setOptions) => {
+  return id === context.lastInteractedElemId &&
+    context.inspecting &&
+    selected ? (
+    <Inspector options={options} setOptions={setOptions} />
+  ) : null
+}
+
+const InfiniteTextArea = ({ context, id, scale, selected, x, y, ...save }) => {
   if (context.zenMode && context.lastInteractedElemId !== id) return null
+  const [text, setText] = useState(save.text ? save.text : "")
+  const [bounding, setBounding] = useState(
+    save.bounding ? save.bounding : { width: 100, height: 70 }
+  )
+  const [hovering, setHovering] = useState(false)
   const [options, setOptions] = useState({
     scale: 1 / scale,
     color: "black",
     resizable: true,
-    ["distraction free"]: false,
-    ["no critic"]: false,
   })
 
   const { viewportX, viewportY } = getViewportCoordinates(
@@ -986,211 +1013,101 @@ const InfiniteTextArea = ({ context, id, scale, selected, x, y, ...props }) => {
     context.zoom
   )
 
-  // no critic mode
-  useEffect(() => {
-    let me = document.getElementById(`textarea-${id}`)
-    let paragraphs = [me, ...me.children]
-    if (options["no critic"] === false) {
-      for (let p of paragraphs) p.style.color = options.color
-    } else {
-      for (let i = 0; i < paragraphs.length; i++) {
-        const p = paragraphs[i]
-        if (i === paragraphs.length - 1) p.style.color = options.color
-        else p.style.color = "white"
-      }
-    }
-  }, [options["no critic"]])
-
-  return (
-    <>
-      {id === context.lastInteractedElemId && context.inspecting && selected ? (
-        <Inspector options={options} setOptions={setOptions} />
-      ) : null}
-
-      <div
-        onClick={e => {
-          if (options["distraction free"]) {
-            e.stopPropagation()
-            return
-          }
-          if (!context.zoomMode) {
-            e.stopPropagation()
-            if (selected && !context.inspecting)
-              setElementPropertyById(id, context, "selected", false)
-            if (selected && context.inspecting)
-              context.setLastInteractedElemId(id)
-            if (!selected) {
-              if (e.shiftKey)
-                setElementPropertyById(id, context, "selected", true)
-              else selectElementAndDeselectRest(id, context)
-              context.setLastInteractedElemId(id)
-            }
-          }
-        }}
-        onMouseDown={e => {
-          if (e.shiftKey) {
-            e.preventDefault()
-            document.activeElement.blur()
-          }
-        }}
-        id={`textarea-container-${id}`}
-        style={{ overflowY: options["distraction free"] ? "auto" : "hidden" }}
-      >
-        <MyTextField
-          {...props}
-          context={context}
-          id={id}
-          scale={scale}
-          distractionFree={options["distraction free"]}
-          options={options}
-          selected={selected}
-          onWheel={e => {
-            if (options["distraction free"]) e.stopPropagation()
-          }}
-          x={x}
-          y={y}
-          resizable={options.resizable}
-          style={{
-            ...props.style,
-            color: options.color,
-            position: "fixed",
-            top: options["distraction free"] && selected ? 0 : viewportY,
-            left: options["distraction free"] && selected ? 0 : viewportX,
-            transform: `scale(${context.zoom.scale / (1 / options.scale)})`,
-            transformOrigin: "top left",
-            backgroundColor: "white",
-            height: options["distraction free"] && selected ? "100vh" : "100px",
-            width:
-              options["distraction free"] && selected
-                ? context.inspecting
-                  ? "70vw"
-                  : "100vw"
-                : "70px",
-            zIndex: options["distraction free"] ? "1000" : "0",
-            overflowY: "auto",
-          }}
-          idx={props.id}
-        />
-      </div>
-    </>
-  )
-}
-
-const MyTextField = props => {
-  const [text, setText] = useState(props.text ? props.text : "")
-  const [hovering, setHovering] = useState(false)
+  const pushStateToCanvas = useCallback(() => {
+    context.saveElement(id, { text, bounding, options })
+  }, [text, options, bounding])
 
   useEffect(() => {
-    //document.getElementById(`textarea-${props.id}`).focus()
-  }, [])
+    pushStateToCanvas()
+  }, [text, bounding])
 
   const onChange = event => {
+    context.setLastInteractedElemId(id)
     setText(event.target.value)
-
-    if (props.distractionFree) return
+    /*
     const field = event.target
-
-    props.context.setLastInteractedElemId(props.id)
-
-    //auto-expand so there isn't a vertical scrollbar
     let computed = window.getComputedStyle(field)
+    console.log("began with", computed)
     let height =
       parseInt(computed.getPropertyValue("border-top-width"), 10) +
-      field.scrollHeight +
-      parseInt(computed.getPropertyValue("border-bottom-width"), 10)
+      field.scrollHeight
+    parseInt(computed.getPropertyValue("border-bottom-width"), 10)
+    console.log("ended with", height)
     field.style.height = height + "px"
+    */
   }
 
   return (
-    <div style={{ position: "relative" }}>
-      <style jsx>{`
-        p {
-          margin-bottom: 0px;
-          width: ${props.distractionFree
-            ? props.context.inspecting
-              ? "70vw"
-              : "100vw"
-            : "100vw"};
-        }
-      `}</style>
-      <p
-        contentEditable
-        {...props}
-        resizable="a"
-        onClick={e => {
-          if (props.context.zoomMode) {
-            e.preventDefault()
-            document.getElementById(`textarea-${props.id}`).blur()
-          }
-        }}
-        onMouseDown={e => {
-          if (e.shiftKey) {
-            e.preventDefault()
-            document.activeElement.blur()
-          }
-        }}
-        onKeyUp={e => {
-          if (props.options["no critic"]) {
-            if (e.keyCode === 13 || e.keyCode === 32) {
-              let me = document.getElementById(`textarea-${props.id}`)
-              let paragraphs = [me, ...me.children]
-              for (let i = 0; i < paragraphs.length; i++) {
-                const p = paragraphs[i]
-                if (i === paragraphs.length - 1)
-                  p.style.color = props.options.color
-                else p.style.color = "white"
-              }
-            }
-          }
-        }}
+    <>
+      {inspectorForElement(id, context, selected, options, setOptions)}
+      <div
         style={{
-          fontSize: "80%",
+          position: "fixed",
           fontFamily: "georgia",
-          ...props.style,
-          cursor: (() => {
-            if (props.context.zoomMode === 1) return "zoom-in"
-            if (props.context.zoomMode === -1) return "zoom-out"
-            if (props.context.zoomMode === 0) return "text"
-          })(),
-          border: `1px solid ${hovering ? "grey" : "white"}`,
-          lineHeight: "120%",
-          resize: props.resizable ? "both" : "none",
-          marginBottom: 0,
-          paddingLeft: props.distractionFree ? "15vw" : 0,
-          paddingRight: props.distractionFree ? "15vw" : 0,
-          paddingTop: props.distractionFree ? 30 : 0,
-          paddingBottom: props.distractionFree ? 30 : 0,
+          backgroundColor: "white",
+          top: viewportY,
+          left: viewportX,
+          overflow: "visible",
         }}
-        id={`textarea-${props.id}`}
-        value={text}
-        onChange={onChange}
-        autoComplete="new-password"
-        onMouseEnter={() => setHovering(true)}
-        onMouseLeave={() => setHovering(false)}
-      />
-      {hovering || props.selected || dragging.id === props.id ? (
-        <div
+        id={`textarea-container-${id}`}
+      >
+        <textarea
           style={{
-            position: "fixed",
-            top: props.style.top,
-            left: props.style.left,
+            cursor: (() => {
+              const zm = context.zoomMode
+              if (zm === 1) return "zoom-in"
+              if (zm === -1) return "zoom-out"
+              if (zm === 0) return "text"
+            })(),
+            resize: options.resizable ? "both" : "none",
+            marginBottom: 0,
+            border: `1px solid ${hovering || selected ? "grey" : "white"}`,
+            width: bounding.width,
+            height: bounding.height,
+            transform: `scale(${context.zoom.scale / (1 / options.scale)})`,
+            transformOrigin: "top left",
+            padding: 0,
           }}
-        >
+          id={`textarea-${id}`}
+          value={text}
+          onChange={onChange}
+          onClick={e => {
+            selection(e, id, context, selected)
+          }}
+          onMouseDown={e => {
+            if (e.shiftKey) {
+              e.preventDefault()
+              document.activeElement.blur()
+            }
+          }}
+          onMouseUp={e => {
+            let { width, height } = document
+              .getElementById(`textarea-${id}`)
+              .getBoundingClientRect()
+            width /= context.zoom.scale
+            height /= context.zoom.scale
+            setBounding({ width, height })
+          }}
+          onMouseEnter={() => setHovering(true)}
+          onMouseLeave={() => setHovering(false)}
+        />
+      </div>
+      {hovering || selected || dragging.id === id ? (
+        <>
           <span
             className="noselect"
             style={{
-              position: "absolute",
-              left: "-18px",
-              top: -10,
+              position: "fixed",
+              left: viewportX - 18,
+              top: viewportY - 10,
               cursor: "pointer",
               fontSize: 8,
+              zIndex: 100,
             }}
-            onClick={() => {
-              e => {
-                deleteElementById(props.id, props.context)
-                e.preventDefault()
-                e.stopPropagation()
-              }
+            onClick={e => {
+              deleteElementById(id, context)
+              e.preventDefault()
+              e.stopPropagation()
             }}
           >
             x
@@ -1198,21 +1115,22 @@ const MyTextField = props => {
           <span
             className="noselect"
             style={{
-              position: "absolute",
-              left: "-18px",
-              top: 5,
+              position: "fixed",
+              left: viewportX - 18,
+              top: viewportY,
               fontSize: 8,
               cursor: "all-scroll",
+              zIndex: 100,
             }}
             onMouseDown={e => {
-              setDragging({ id: props.id, x: e.pageX, y: e.pageY })
+              setDragging({ id, x: e.pageX, y: e.pageY })
             }}
           >
             m
           </span>
-        </div>
+        </>
       ) : null}
-    </div>
+    </>
   )
 }
 
