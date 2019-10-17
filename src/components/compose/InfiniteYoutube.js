@@ -1,25 +1,24 @@
 import React, { useState } from "react"
 import { Youtube } from "../embeds"
+import { viewport } from "../../lib/infinite-util.js"
+import { dragging } from "../../pages/compose"
 import {
-  getViewportCoordinates,
-  setElementPropertyById,
-  deleteElementById,
-} from "../../lib/infinite-util.js"
-import { inspectorForElement } from "./common"
+  DeleteButton,
+  MoveButton,
+  selection,
+  shouldHide,
+  inspectorForElement,
+} from "./common"
 
 const InfiniteYoutube = ({ context, scale, x, y, id, selected, ...props }) => {
+  if (shouldHide(id, context)) return null
+  const { viewportX, viewportY } = viewport(x, y, context)
+
   const [isHovering, setIsHovering] = useState(false)
   const [loaded, setLoaded] = useState(false)
-
-  if (context.zenMode && context.lastInteractedElemId !== id) return null
-
   const [options, setOptions] = useState({ src: props.src ? props.src : "" })
-  const { viewportX, viewportY } = getViewportCoordinates(
-    x,
-    y,
-    context.translate,
-    context.zoom
-  )
+
+  const onClick = e => selection(e, id, context, selected)
 
   return (
     <>
@@ -37,41 +36,33 @@ const InfiniteYoutube = ({ context, scale, x, y, id, selected, ...props }) => {
         }}
         onMouseEnter={e => setIsHovering(true)}
         onMouseLeave={e => setIsHovering(false)}
+        onClick={onClick}
       >
-        {isHovering ? (
-          <div
-            style={{
-              position: "absolute",
-              width: 10,
-              height: 20,
-              top: 5,
-              right: 5,
-              color: "black",
-            }}
-            onClick={e => {
-              if (!context.zoomMode) {
-                e.stopPropagation()
-                if (selected && !context.inspecting)
-                  setElementPropertyById(id, context, "selected", false)
-                if (selected && context.inspecting)
-                  context.setLastInteractedElemId(id)
-                if (!selected) {
-                  setElementPropertyById(id, context, "selected", true)
-                  context.setLastInteractedElemId(id)
-                }
-              }
-            }}
-          >
-            <span
-              onClick={e => {
-                deleteElementById(id, context)
-                e.preventDefault()
-                e.stopPropagation()
+        {isHovering || dragging.id === id ? (
+          <>
+            <DeleteButton
+              id={id}
+              context={context}
+              style={{
+                position: "absolute",
+                width: 10,
+                height: 20,
+                top: 5,
+                right: 5,
               }}
-            >
-              x
-            </span>
-          </div>
+            />
+            <MoveButton
+              id={id}
+              context={context}
+              style={{
+                position: "absolute",
+                width: 10,
+                heigth: 20,
+                top: 15,
+                right: 5,
+              }}
+            />
+          </>
         ) : null}
         <Youtube
           style={{

@@ -1,13 +1,18 @@
 import React, { useState, useCallback, useEffect } from "react"
+import { viewport } from "../../lib/infinite-util"
+import { dragging } from "../../pages/compose.js"
 import {
-  getViewportCoordinates,
-  deleteElementById,
-} from "../../lib/infinite-util"
-import { inspectorForElement, selection } from "./common"
-import { dragging, setDragging } from "../../pages/compose.js"
+  DeleteButton,
+  MoveButton,
+  inspectorForElement,
+  selection,
+  shouldHide,
+} from "./common"
 
 const InfiniteTextArea = ({ context, id, scale, selected, x, y, ...save }) => {
-  if (context.zenMode && context.lastInteractedElemId !== id) return null
+  if (shouldHide(id, context)) return null
+  const { viewportX, viewportY } = viewport(x, y, context)
+
   const [text, setText] = useState(save.text ? save.text : "")
   const [bounding, setBounding] = useState(
     save.bounding ? save.bounding : { width: 100, height: 70 }
@@ -18,13 +23,6 @@ const InfiniteTextArea = ({ context, id, scale, selected, x, y, ...save }) => {
     color: "black",
     resizable: true,
   })
-
-  const { viewportX, viewportY } = getViewportCoordinates(
-    x,
-    y,
-    context.translate,
-    context.zoom
-  )
 
   const pushStateToCanvas = useCallback(() => {
     context.saveElement(id, { text, bounding, options })
@@ -37,17 +35,24 @@ const InfiniteTextArea = ({ context, id, scale, selected, x, y, ...save }) => {
   const onChange = event => {
     context.setLastInteractedElemId(id)
     setText(event.target.value)
-    /*
-       const field = event.target
-       let computed = window.getComputedStyle(field)
-       console.log("began with", computed)
-       let height =
-       parseInt(computed.getPropertyValue("border-top-width"), 10) +
-       field.scrollHeight
-       parseInt(computed.getPropertyValue("border-bottom-width"), 10)
-       console.log("ended with", height)
-       field.style.height = height + "px"
-     */
+  }
+
+  const onClick = e => selection(e, id, context, selected)
+
+  const onMouseDown = e => {
+    if (e.shiftKey) {
+      e.preventDefault()
+      document.activeElement.blur()
+    }
+  }
+
+  const onMouseUp = e => {
+    let { width, height } = document
+      .getElementById(`textarea-${id}`)
+      .getBoundingClientRect()
+    width /= context.zoom.scale * options.scale
+    height /= context.zoom.scale * options.scale
+    setBounding({ width, height })
   }
 
   return (
@@ -87,63 +92,25 @@ const InfiniteTextArea = ({ context, id, scale, selected, x, y, ...save }) => {
           id={`textarea-${id}`}
           value={text}
           onChange={onChange}
-          onClick={e => {
-            selection(e, id, context, selected)
-          }}
-          onMouseDown={e => {
-            if (e.shiftKey) {
-              e.preventDefault()
-              document.activeElement.blur()
-            }
-          }}
-          onMouseUp={e => {
-            let { width, height } = document
-              .getElementById(`textarea-${id}`)
-              .getBoundingClientRect()
-            width /= context.zoom.scale * options.scale
-            height /= context.zoom.scale * options.scale
-            setBounding({ width, height })
-          }}
+          onClick={onClick}
+          onMouseDown={onMouseDown}
+          onMouseUp={onMouseUp}
           onMouseEnter={() => setHovering(true)}
           onMouseLeave={() => setHovering(false)}
         />
       </div>
       {hovering || selected || dragging.id === id ? (
         <>
-          <span
-            className="noselect"
-            style={{
-              position: "fixed",
-              left: viewportX - 18,
-              top: viewportY - 10,
-              cursor: "pointer",
-              fontSize: 8,
-              zIndex: 100,
-            }}
-            onClick={e => {
-              deleteElementById(id, context)
-              e.preventDefault()
-              e.stopPropagation()
-            }}
-          >
-            x
-          </span>
-          <span
-            className="noselect"
-            style={{
-              position: "fixed",
-              left: viewportX - 18,
-              top: viewportY,
-              fontSize: 8,
-              cursor: "all-scroll",
-              zIndex: 100,
-            }}
-            onMouseDown={e => {
-              setDragging({ id, x: e.pageX, y: e.pageY })
-            }}
-          >
-            m
-          </span>
+          <DeleteButton
+            id={id}
+            context={context}
+            style={{ left: viewportX - 18, top: viewportY - 10 }}
+          />
+          <MoveButton
+            id={id}
+            context={context}
+            style={{ left: viewportX - 18, top: viewportY }}
+          />
         </>
       ) : null}
     </>

@@ -8,16 +8,24 @@ import Clef from "../../lib/music/clef"
 import Duration from "../../lib/music/duration"
 import Verticality from "../../lib/music/verticality"
 import Staff from "../../lib/music/staff"
-import Voice, { melody } from "../../lib/music/voice"
+import Voice from "../../lib/music/voice"
+import {
+  pianoRollRegex,
+  pianoRollKeysToNotes,
+  durationRegex,
+  durationKeysToDurations,
+} from "./InfiniteVexflow2/tables"
+import { convertSavedMusicFromJSON } from "./InfiniteVexflow2/util"
 import Note from "../../lib/music/note.js"
 import Rest from "../../lib/music/rest"
 import TimeSignature from "../../lib/music/time-signature"
+import { shouldHide } from "./common"
 import { dragging, setDragging } from "../../pages/compose"
 import {
-  getViewportCoordinates,
   setElementPropertyById,
   deleteElementById,
   selectElementAndDeselectRest,
+  viewport,
 } from "../../lib/infinite-util"
 
 const debug = false
@@ -38,83 +46,9 @@ const log = x => {
 }
 const unlog = () => (logging = "")
 
-const applyFnToElemAndChildren = (fn, elem) => {
-  if (elem.children.length > 0) {
-    fn(elem)
-    for (let child of elem.children) {
-      applyFnToElemAndChildren(fn, child)
-    }
-  } else {
-    fn(elem)
-  }
-}
-
 // a map of vexflow-generated DOMIds to references to their respective music elements
 // this is not in the component because we can't let it get out of sync, eg. by using async setState
 let DOMIdsToVexflows = {}
-
-const e = new Duration(1, 2)
-const q = new Duration(1, 4)
-const testSystems = [
-  new System(
-    new Staff([
-      melody("c4", "d4", "e4", "f4", "g4", "f4", "e4", "d4").at(0),
-      new TimeSignature(4, 4).at(0),
-    ])
-  ),
-  new System(
-    new Staff([
-      new Voice([new Verticality(["c4", "e4", "g4"])]).at(0),
-      new TimeSignature(4, 4).at(0),
-    ])
-  ),
-  new System(
-    new Staff([
-      new Voice([new Verticality(["c4", "e4", "g4"])]).at(0),
-      new Voice([new Verticality(["d4", "f4", "a4"])]).at(0),
-      new TimeSignature(4, 4).at(0),
-    ])
-  ),
-  new System([
-    new Staff([
-      melody("c4", "d4", "e4", "f4").at(0),
-      melody("e4", "f4", "g4", "a4").at(0),
-      new TimeSignature(4, 4).at(0),
-    ]),
-  ]),
-  new System([
-    new Staff([
-      melody("c4", "d4", "e4", "f4").at(0),
-      melody("f4", "e4", "d4", "c4").at(0),
-      new TimeSignature(2, 4).at(0),
-    ]),
-  ]),
-  new System([
-    new Staff([
-      melody("c4", "d4", "e4", "f4").at(0),
-      new TimeSignature(3, 4).at(0),
-    ]),
-  ]),
-  new System([
-    new Staff([
-      melody("c4", "d4", "e4", "f4", "g4", "a4", "b4", "c5")
-        .withDurations(e)
-        .at(0),
-      new TimeSignature(4, 4).at(0),
-    ]),
-  ]),
-  new System(
-    new Staff([
-      melody("c4", "d4", "e4", "f4", "g4", "a4", "b4", "c5")
-        .withDurations(e)
-        .at(0),
-      melody("c5", "b4", "a4", "g4", "a4", "b4", "c5", "d5")
-        .withDurations(e)
-        .at(0),
-      new TimeSignature(4, 4).at(0),
-    ])
-  ),
-]
 
 const last = arr => arr[arr.length - 1]
 
@@ -130,71 +64,6 @@ let firstMidiNote = null
 let lastKeyEventType = null
 let firstPianoRollKey = null
 
-const pianoRollRegex = /^[awsedftgyhujkl;bvc\[\]\\]$/
-const pianoRollKeysToNotes = {
-  a: { letter: "c" },
-  w: { letter: "c", accidental: "#" },
-  s: { letter: "d" },
-  e: { letter: "e", accidental: "b" },
-  d: { letter: "e" },
-  f: { letter: "f" },
-  t: { letter: "f", accidental: "#" },
-  g: { letter: "g" },
-  y: { letter: "a", accidental: "b" },
-  h: { letter: "a" },
-  u: { letter: "b", accidental: "b" },
-  j: { letter: "b" },
-  k: { letter: "c", octaveAdjust: 1 },
-  l: { letter: "d", octaveAdjust: 1 },
-  [";"]: { letter: "e", octaveAdjust: 1 },
-  ["["]: { letter: "f", octaveAdjust: 1 },
-  ["]"]: { letter: "g", octaveAdjust: 1 },
-  ["\\"]: { letter: "a", octaveAdjust: 1 },
-  b: { letter: "b", octaveAdjust: -1 },
-  v: { letter: "a", octaveAdjust: -1 },
-  c: { letter: "g", octaveAdjust: -1 },
-}
-
-const durationRegex = /^[123456]$/
-const durationKeysToDurations = {
-  1: [4, 1],
-  2: [2, 1],
-  3: [1, 1],
-  4: [1, 2],
-  5: [1, 4],
-  6: [1, 8],
-  7: [1, 16],
-}
-
-const convertSavedMusicFromJSON = json => {
-  let saved = []
-  for (let ent of json.music) {
-    if (ent.type === "time-signature")
-      saved.push(
-        new TimeSignature(ent.numerator, ent.denominator).at(ent.position)
-      )
-    else if (ent.type === "clef") {
-      saved.push(new Clef(ent.clefType).at(ent.position))
-    } else if (ent.type === "voice")
-      saved.push(
-        new Voice(
-          ent.temporals.map(temp => {
-            if (temp.type === "rest")
-              return new Rest(
-                new Duration(temp.duration.numerator, temp.duration.denominator)
-              )
-            else if (temp.type === "verticality")
-              return new Verticality(
-                temp.notes.map(n => new Note(n.letter, n.accidental, n.octave)),
-                new Duration(temp.duration.numerator, temp.duration.denominator)
-              )
-          })
-        ).at(ent.position)
-      )
-  }
-  return new System(new Staff(saved))
-}
-
 export const InfiniteVexflow = ({
   context,
   scale,
@@ -204,8 +73,11 @@ export const InfiniteVexflow = ({
   selected,
   ...save
 }) => {
-  if (context.zenMode && context.lastInteractedElemId !== id) return null
+  if (shouldHide(id, context)) return null
+  const { viewportX, viewportY } = viewport(x, y, context)
 
+  //************STATE******************************//
+  //***********************************************//
   const [options, setOptions] = useState(
     save.options
       ? save.options
@@ -214,7 +86,6 @@ export const InfiniteVexflow = ({
           ["playback"]: false,
         }
   )
-
   // the last command field command. stored so that
   // the period key can repeat a command, like vim.
   const [lastCommand, setLastCommand] = useState("")

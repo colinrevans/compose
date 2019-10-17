@@ -21,6 +21,10 @@ export const getViewportCoordinates = (
   return { viewportX, viewportY }
 }
 
+export const viewport = (x, y, context) => {
+  return getViewportCoordinates(x, y, context.translate, context.zoom)
+}
+
 export const setElementPropertyById = (id, context, prop, value) => {
   context.setElements(elements =>
     elements.map(elem => (elem.id === id ? { ...elem, [prop]: value } : elem))
