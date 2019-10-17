@@ -1,20 +1,29 @@
 import React from "react"
-import { Link } from "gatsby"
 import { MDXProvider } from "@mdx-js/react"
 import SEO from "./seo"
-import { Youtube, Spotify } from "./embeds"
+import shortcodes from "./base/shortcodes"
 
-const shortcodes = { Youtube, Spotify }
-
-export default function PageTemplate({ path, children }) {
+export default function PageTemplate({ path, children, pageContext }) {
+  console.log("path, ", path)
+  console.log("children, ", children)
+  console.log("page context", pageContext)
   return (
     <>
       <SEO title={path.replace(/\//g, "")} />
-      <div style={{ margin: 30 }}>
+      <div
+        className="pagediv"
+        style={{
+          marginTop: "5vh",
+        }}
+      >
         <MDXProvider components={shortcodes}>{children}</MDXProvider>
-        <Link style={{ marginTop: 50, fontSize: "80%" }} to="/">
-          home
-        </Link>
+        <br />
+        <br />
+        <br />
+        <br />
+        <br />
+        <br />
+        <br />
       </div>
     </>
   )

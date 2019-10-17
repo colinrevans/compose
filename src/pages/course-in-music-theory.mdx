@@ -1,0 +1,250 @@
+import HoverPiano from './course/hover-piano.js'
+import SVG from './course/svg.js'
+
+export const meta = {
+      'test': 'test' 
+}
+
+# course in music
+
+*NOTE: we start simply and revise when we must. Music theory is never fully exact: it doesn't include an account of the hearing mechanism, or of the propogation of soundwaves, or of how each neuron is involved. We begin with general, but useful, abstractions and demand more exactitude, drawing from other disciplines, as we go along. Those already familiar with music theory can skip forward; the course includes advanced material sourced from recent academic papers, and should have something novel for the vast majority. I've resisted assuming any background here.*
+
+*At any time use your computer keyboard to play notes, as displayed to the right. Alternatively, click on the keys of any piano keyboard below.*
+
+## preliminary vocabulary
+
+<p><span style={{fontSize: '80%', fontStyle: 'italic'}}>notes, octaves, pitch, collection, scale, stability, resolution, tonic, root, key, major, minor, scale degree, relative minor, relative major, half step, whole step, sharp, flat, accidental, enharmonic, chromatic, closely related keys, chord, dyad, triad, major intervals, minor intervals, perfect intervals, harmonic intervals, dissonance, consonance, root position, first inversion, second inversion, inversion, voicing, above bass interval set, major chords, minor chords, diminished chords, chord symbols, leading tone, chord types, circle of fifths.</span></p>
+
+
+<Marginalia left>notes, octaves</Marginalia>
+
+1. There are twelve *notes*. Let's number them one through twelve and put them on an *octave* of the piano:
+
+<SVG playable file={'1-numbered.svg'} width={170 *1.1} height={150 *1.1} />
+
+Go ahead and play them using the computer keyboard, using the keyboard shortcuts to your right.
+
+3. Let's extend this to three octaves:
+
+<SVG playable file={'2-three-octaves.svg'} width={500* 1.1} height={100 *1.1} />
+
+<Marginalia left>pitch</Marginalia>
+<Marginalia>The metaphor of pitch having height isn't universal across cultures. For some, pitch is something closer to out and in. For others, it's more horizontal than vertical. But 'pitch' is not only anthropologically inexact; psychoacousticians recognize that pitch is a catch-all term for different related phenomena. More later.</Marginalia>
+
+The same note in different octaves sounds similar enough. From one octave to another, however, the same note will sound higher or lower. We call how "high" or "low" a note is its *pitch*. So the same note can be high or low.
+
+3. Now, you can play a lot of music on just the white notes. Since we use them more frequently than the black ones (there are more of them, and they are easier to play) let's letter them from <m>a</m> to <m>g</m>: <m>a, b, c, d, e, f, g</m>. It turns out that <m>c</m> is the easiest note to work with for now, so note its position on the keyboard.
+
+<SVG playable file={'3-letters.svg'} width={170 * 1.1} height={150 * 1.1}/>
+
+<Marginalia left>collection, scale, major</Marginalia>
+
+4. If you play only white notes you'll find it sounds rather pleasant. Let's call a group of notes a *collection*. If we order a collection in order of pitch, either from high to low, or low to high, we have a *scale*. If we play the white notes, one after another, starting on C and adding another C at the end for good measure <m>(c, d, e, f, g, a, b, c)</m>, we have what's called a *C major scale*:
+
+<SVG playable file={'4-c-major-scale.svg'} width={194 * 1.1} height={192 * 1.1} />
+
+<Marginalia left>stability, resolution</Marginalia>
+
+5. If you play freely with the notes of the C major scale, you'll find that C feels more *stable* than the other notes, and that some notes want to *resolve* to other ones. Try playing the C major scale and stopping at B, for example. You'll want to complete the scale with the C up top. Then play C, G, and F, in succession; wait awhile, and then play E. In both cases you'll find that a feeling of tension has been resolved.
+
+<Marginalia left>tonic, root</Marginalia>
+
+6. We call the note that feels most stable overall the *tonic*, and sometimes the *root*, although tonic is a better word in this case (we'll get more meanings for the word root later). C is most stable here, so the tonic is C.
+
+<Marginalia left>key</Marginalia>
+
+7. We call a collection of pitches related to a certain tonic a *key* if it has every letter. We say the C major scale is in the key of C major. It includes all the letters <m>(c, d, e, f, g, a, b)</m> and has a tonic, C. Often when we refer to the C major scale, we simply refer to the pitch collection with all the notes of a c major scale, not necessarily the notes in order.
+
+<Marginalia left>scale degree</Marginalia>
+
+8. We'll want to refer to each note in the scale by its position: the first, second, third, and so forth. We call this a *scale degree*. The tonic is the first scale degree, and so on and so forth.
+
+<Marginalia left>minor</Marginalia>
+
+9. Let's shift the piano just a little, so that we have the same collection of notes, but starting on A:
+
+<SVG playable file={'5-a-minor-scale.svg'} width={195 * 1.1} height={190 * 1.1} />
+
+Ordered from low to high--and once again adding another A up top for good measure--we have <m>a, b, c, d, e, f, g, a</m>. We call this scale the A minor scale, and say that the pitches are in the key of A minor, because we relate them to the tonic, A. You'll notice that A minor sounds less elevated in mood than C major. Some say minor is sadder than major, but it should be noted that plenty of songs are in minor that aren't sad.
+
+<Marginalia left>relative major and minor</Marginalia>
+
+10. We say that the key of A minor is the *relative minor* of the key of C major, and that the key of C major is the *relative major* of the key of A minor. Frequently, songs will switch from major to minor, minor to major, in order to switch up the mood. That makes this useful terminology.
+
+11. So why do A minor and C major sound different, if they have the same notes? Let's examine them more closely:
+
+<SVG playable file={'6b-c-major-steps.svg'} width={195 * 1.1} height={175 * 1.1} />
+<br />
+<SVG playable file={'6a-a-minor-steps.svg'} width={195 * 1.1} height={175 * 1.1} />
+
+We see that the distances between the different notes of each scale occur in different places. In A minor, the first time a white note is next to a white note, without a black one inbetween, is from the second scale degree to the third. In C major, it's from the third to the fourth. The primary--and really only--distinguishing factor between different scales is the distance between each of its notes.
+
+<Marginalia left>whole step, half step, semitone</Marginalia>
+
+12. Music theory has a vocabulary for talking about this distance. The smallest distance possible, for now, is a *half step*, or *semitone*. A *whole step*, predictably, is two half steps. If we think of notes as numbers, as we did at the beginning, then a half step is when you add or subtract one to a note's number. A whole step is when you add or subtract two. On the keyboard, a halfstep is when you go the next note over, whether white or black. A whole step is when you go two notes over.
+
+13. Major and minor scales have only whole and half steps.  For major scales, the steps are as follows: <m>w, w, h, w, w, w, h</m>. For minor scales: <m>w, h, w, w, h, w, w, w</m>. Let's annotate the last diagram with steps now:
+
+<div style={{textAlign: 'center'}}>
+piano graphic
+</div><br />
+
+<Marginalia left>sharp, flat, accidental</Marginalia>
+
+14. Now that we've gotten used to referring to notes with letters, let's do the same for black notes. If we want to refer to the black note to the right of a white one, we add a *sharp* to the letter. So the black note to the right of C is C sharp, which we write using what looks like a hash sign: C♯. Going the other direction, we add a *flat*, which we write using what looks like a b: B♭. Let's generalize this, though, and say that a sharp is similar to a half step: it raises the pitch of a letter to the pitch a half step above it. Flats lower the pitch of a letter to the pitch a half step below. So E♯, then, is simply F, and F♭ is simply E. Sharps and flats are called *accidentals*.
+
+<Marginalia left>enharmonic</Marginalia>
+
+15. C♯ and D♭ refer to the same note. This means both are *enharmonic* to one another, and that C♯ is an enharmonic of D♭, D♭ an enharmonic of C♯.
+
+16. Since half-steps are an equal distance from one another, there are 12 equivalent ways we can have the major scale's <m>w, w, h, w, w, w, h</m> (remember that there are 12 notes). We can have a major scale built on C just as much as we can have it on Db or Eb or F♯ or whatever. There are 12 ways we can have the minor scale's <m>w, h, w, w, h, w, w, w</m> too, using the same 12 notes. Since the tonic, for both scales, is its first note, we end up with 24 keys: C major and C minor, D♭ major and C♯ minor, D major and D minor, and so on.
+
+<Marginalia left>chromatic scale</Marginalia>
+
+17. We call the collection of all twelve notes, in order, the *chromatic scale*. It is quite a lot like a color pallete, which is why the word--built from chroma, color--makes sense. We can restate the previous point in the following terms: we can build a major and minor scale--any scale for that matter--on top of any note of the chromatic scale. Note that we do not, however, have a chromatic key; the word "key" is only used for major and minor pitch collections relative to a certain tonic.
+
+<Marginalia left>closely related keys</Marginalia>
+
+18. Some keys are *closely related*, which is to say their notes are almost the same. C major's notes are the following: {<m>C, D, E, F, G, A, B</m>}. G major's, on the other hand, are: {<m>G, A, B, C, D, E, F♯</m>}. We notice that only one note, F, is different. On the keyboard:
+
+<div style={{textAlign: 'center'}}>
+piano graphic
+</div><br />
+
+Since the steps between the notes happen in the same order (<m>w, w, h, w, w, w, h</m>), playing a D after a C sounds rather similar to playing an A after a G. A song in major can be played just as well in G major as in C major. In addition, since the notes are almost the same, a song can switch between C major and G major without much ado. We will return to how keys relate to one another in more detail later.
+
+<Marginalia left>chord, dyad, triad</Marginalia>
+
+19. If we play multiple notes at one time, we have--usually--what's called a *chord*. More specifically, if we play two notes at once, we have a *dyad*, three, a *triad*. In practice we have no need of tetrads and so on: the more general word "chord" does just fine to refer to triads, tetrads, and so on. You will never hear tetrad ever.
+
+20. It is cumbersome to figure out how many whole and half steps are between different scale degrees simply by referring to the order of whole and half steps in a scale/key. Returning to the keys of C and G major, we need a way to quickly refer to the distance between, say, the first and third scale degrees:
+
+<div style={{textAlign: 'center'}}>
+piano graphic
+</div><br />
+
+<Marginalia left>intervals, harmonic intervals</Marginalia>
+
+When, before, we had to talk of the distance between notes, we spoke of intervals, namely, the interval of a whole step and the interval of a half step. In C and G major, between the first and third scale degrees, there are two whole steps, or equivalently four half steps. We call the *interval* of four half steps a major third. So the third of a major scale (E in C major, and B in G major) is a major third from the tonic. The nomenclature gets a little tricky now, because "major third" can refer to the *interval* between two notes just as much as it can designate the *dyad* of two notes a major third a part, which we call a *harmonic interval*. So: "play a major third", if we are in C major, will usually mean "play C and E", but it can also mean, "play G and B", or "play F and A". Each pair has 4 half steps between each note. Note that all these pairs occur in C major. "Play a major third *on*, or *above*, [some note]" is less ambiguous.
+
+<Marginalia left>major and minor intervals</Marginalia>
+
+21. Why is the interval of four half steps called called a major third? Complicated; but for now remember that, from the first to the third scale degrees, in major, there are four half steps. Besides, if you play a major third, it will sound pretty major. The first and third are extremely common scale degrees, and it's no surprise that playing a major third often gets you in the mindset of a major key. In fact, if you haven't heard anything for a while, and you sit down and play a major third (and you are enculturated in western musical practices), your ears will just go ahead and hear it in the major key of the lower note.
+
+<Marginalia left>perfect intervals</Marginalia>
+
+22. But some intervals are in both major and minor keys. Let's bring back C major and A minor:
+
+<div style={{textAlign: 'center'}}>
+piano graphic
+</div><br />
+
+You'll notice that the number of half steps between the first and fifth scale degrees are the same: 7 half steps. We wouldn't want to jump the gun and call the interval major or minor, because if we played it alone we wouldn't know if we're in major or minor. So we call it a *perfect* interval. There's a lot of interesting musicology and history in why it's called perfect. But more on that later. For now, this is what's called a perfect fifth. Just like the interval of a major third, it needn't begin on the tonic. In any major scale, we can form six perfect fifths without the use of accidentals: C to G, D to A, E to B, F to C, G to D, and A to E. Remember how A minor was the relative minor of C major, which meant that both had the same notes? That means that, in A minor, you can form the same 6 perfect fifths:
+
+<div style={{textAlign: 'center'}}>
+piano graphic
+</div><br />
+
+23. At this point, it's useful to just have a table mapping the number of half steps to their fleshed out name:
+
+- 1 = minor second (m2) (half step)
+- 2 = major second (M2) (whole step)
+- 3 = minor third (m3)
+- 4 = major third (M3)
+- 5 = perfect fourth (P4)
+- 6 = tritone
+- 7 = perfect fifth (P5)
+- 8 = minor sixth (m6)
+- 9 = major sixth (M6)
+- 10 = minor seventh (m7)
+- 11 = major seventh (M7)
+- 12 = octave
+
+24. A few remarks. Intervals don't only go up. We can say that E is a major third above C, just as well as we can say C is a major third below E. In both cases the number of half steps--four--is the same. An *octave* gets you the same note, just higher or lower, or in other words, at a different pitch. A minor second is an exception to what I was saying above, regarding when an interval is called major or minor. If you sat down and played a minor second out of nowhere, it would just sound harsh. Harsh enough it would be a little strange to call it major, so we call it minor. But also note that minor intervals always have one half step fewer than their major counterpart. By convention, we use a lower case 'm' to refer to minor, upper case 'M' to refer to major.
+
+<Marginalia left>dissonance, consonance</Marginalia>
+
+25. "Harsh" and "nice" and the like only go so far. In place of harshness we have *dissonance*. In place of niceness we have *consonance*. Let's imagine that we can organize all the intervals according to their dissonance and consonance. This is actually something of an impossible task, for fascinating reasons, but it's fine enough to think of some interval being more *dissonant* than another, or more *consonant* than another. An octave is the same note at different pitches, so, as expected, it's quite consonant. They meld a lot. A perfect fifth melds quite a bit too, and we say it's more dissonant than an octave, although a perfect fifth is hardly a dissonant interval. A minor second is quite dissonant. It clashes quite a bit. A tritone, too, is pretty dissonant. But you can argue whether a tritone is more dissonant than a minor second and vice versa. Dissonance and consonance are like best and worse. Heaven is obviously better than hell, but let's talk some more about Tuesday and Thursday.
+
+<Marginalia left>root position, first inversion, second inversion</Marginalia>
+
+26. Dissonance and consonance apply to chords just as well, so let's talk a little more of chords. Different genres have different conceptions of what they are. Much of the creativity of jazz comes from taking a more general view of what they mean. But usually, a chord is simply some set of notes. {<m>c, e, g</m>} is an example of a major chord. When we speak of a chord usually we just refer to which notes are a part of it. We don't care about the order. So if E is the lowest note (<m>e, g, c</m>), it's still going to be major chord. But we're going to have to refer to the different orderings eventually. So let's say we're in C major. The orderings we care about the most are the following:
+
+- (<m>c</m> <m>e</m> <m>g</m>) - *root position* - M3, m3
+- (<m>e</m> <m>g</m> <m>c</m>) - *first inversion* - m3, P4
+- (<m>g</m> <m>c</m> <m>e</m>) - *second inversion* - P4, M3
+
+<Marginalia left>inversion</Marginalia>
+
+We notice, first of all, that *inverting* a chord means putting the lowest note up top, which usually means putting it up an octave. If we invert a second inversion major chord, we end up at root position again. But what's a root? In truth it's a bit of a fake concept. It doesn't refer to something we hear per se. The root is the lowest note when the chord is in root position. So for all three, (<m>c e g</m>, <m>e g c</m>, <m>g c e</m>) C is the root. How do we know if it's in root position? We notice that for each position of the chord--root, first inversion, and second inversion--the intervals between the notes of the chord differ. If we can arrange some 3 notes so that they're in root position, the lowest note will then be the root. Note that the root is *not* C just because we're in C major. Don't spend much time on finding the root now. It's not that important lmao. And it'll become more clear when we're reading sheet music.
+
+27. Before we proceed, we note that there is a third between c and e, a third between e and g, but a fifth(!) between c and g. Shouldn't three and three be six? The impulse to add the intervals is correct, we just have to take care to add the intervals in half steps. A major third is 4 half steps. A minor third is 3 half steps. 4 + 3 = 7 half steps, and 7 half steps is a perfect fifth. This is one of many reasons to memorize the halfsteps spanned by each interval.
+
+28. If we know what dissonance is for an interval, what is it for a chord? We could just say a chord is essentially as dissonant as the intervals that make it up. While that would be quite elegant, we would be wrong. Dissonance and consonance is something we *perceive*, and we do not perceive a "chord", a concept we've created, broken up into its "intervals", another concept we've created. We hear soundwaves, not concepts. So dissonance and consonance are, once again, out of our grasp. That said, the dissonance of a chord's intervals gives you a pretty good heuristic. A chord that's just a bunch of half steps, called a *chromatic cluster*, is very dissonant. A major chord in root position has 3 intervals: a m3, a M3, and a perfect fifth between the outermost notes. Each of its intervals is pretty consonant. The chord is pretty consonant too.
+
+<Marginalia left>above bass interval set</Marginalia>
+
+29. Intervals are evidently very important for determing how a chord sounds. Let's say that a chord can be *voiced* in different ways, and that each chord has many different *voicings*, and that a voicing is different from another voicing if, and only if, its intervals are different. Then root position, first inversion, and second inversion are different voicings of a major chord. How will we refer to these different voicings? Let's use something called an *above bass interval set*, or AB interval set, after Alan Chapman: we take the bass note--the lowest note--and, for each note above it, note how many half steps are between it and the bass. So a root position major chord begins on C. Then we have an E, a major third above C, which is four half steps. Then we have G, a fifth above C, or seven half steps. We put the numbers together and end up with a 47 voicing. If the number of intervals is 10 or 11, we use 't', for ten, and 'e', for eleven, instead. So a C, Bb, and B played all at once is a te voicing.
+
+30. When will we talk of chords, and when of voicings? In practice you often don't need the specificity of voicings. But they can be very useful. For much of western classical music a voicing-centered conception, using what's called figured bass--a subject for later--was dominant. We said before that if we play an interval of a major third, starting on the root, of any key, it'll sound just about the same. The same is true for a voicing, but not for a chord. If we play a C chord and then a G chord, there's no gaurantee that the invervals in each case will be the same. We might play the C chord in root position, the G chord in second inversion. On the other hand, if we play a 47 voicing on C, then a 47 voicing on G, we know for a fact that the intervals will be the same. When we get to more harmonically complex music, it will be useful to have this specificity available.
+
+31. Before listing the different chord types, let's do more to relate chords to scales and keys. To begin, let's note all the root position triads on each step of the major scale:
+
+<div style={{textAlign: 'center'}}>
+piano graphic
+</div><br />
+
+And then do the same with minor:
+
+<div style={{textAlign: 'center'}}>
+piano graphic
+</div><br />
+
+As expected, the uneven distribution of whole and half steps in a scale means that chords built on different scale degrees are different. In major, root position triads built on the 1st, 4th, and 5th scale degrees are major chords. Root position triads built on the 2nd, 3rd, and 6th scale degrees are *minor* chords. Finally, a root position triad built on the seventh scale degree is *diminished*.
+
+<Marginalia left>roman numerals, chord symbols</Marginalia>
+
+31. We now introduce roman numerals to designate the chords within a key. We use a lowercase roman numeral to designate a chord with a minor third from the root in root position (so, all diminished and minor chords), and use an uppercase roman numeral to designate a chord with a major third from the root in root position (major and *augmented* chords, which we get to later). We add a circle at the end for a diminished chord. So, in major keys, we have: I, ii, iii, IV, V, vi, vii<sup>o</sup>. In minor keys, we have: i, ii<sup>o</sup>, III, iv, v, VI, VII. We'll also introduce *chord symbols* now, where we just put the root and maj or min or dim when necessary. Letters without annotation default to major. C major: <m>C, Dmin, Emin, F, G, Amin, Bdim</m>. C minor: <m>Cmin, Ddim, Ebmaj, Fmin, Gmin, Abmaj, Bbmaj</m>.
+
+<Marginalia left>leading tone</Marginalia>
+
+32. A short note. The seventh of a scale is called the leading tone, because it 'wants' to lead into the tonic. The third of a five chord (a chord whose root position has the fifth scale degree as its bass note) has the seventh of the scale in it. We often want to have the seventh there even if we're in minor. So most of the time, the five chord in minor is V, not v.
+
+33. We've got enough, now, to list off chord types, along with their voicings for different inversions. This is a lot to take in all at once: future sections will go into much more detail with this material.
+
+<div style={{textAlign: 'center'}}>
+table of chord types
+</div><br />
+
+<Marginalia left>circle of fifths</Marginalia>
+
+34. We culminate this section with what's called the *circle of fifths*. We noticed, before, that G major is a closely related key to C. The only difference is that F is raised. If we order all the keys such that a step clockwise is a raising of some note, and a step counterclockwise is a lowering, we get a cycle.
+
+<div style={{textAlign: 'center'}}>
+circle of fifths
+</div><br />
+
+<hr />
+
+## sound
+
+<Marginalia>to this day many claim that chords and notes invoke feeling. It is rather that the brain feels by virtue of the sound waves 'belonging' to them.</Marginalia>
+ 
+
+*The word "sound" refers both to sound waves and what they have us perceive, with the brain's help. This section deals more with sound waves than their perception, although in order to explain the one its often useful to reference the other. The fact that "sound" refers both to its cause and to its result is a good case study in how the vocabulary we use to talk about music can gloss over, and at worst muddle, the particulars.*
+
+1. Before it is perceived, sound is simply a variation in pressure over time: a sound wave. We can plot it as follows, with pressure (*intensity*) on the y axis and time on the x axis. By convention, we have pressure oscillating between at most 1 and -1.
+
+<div style={{textAlign:'center'}}>
+<a title="Pluke [CC0], via Wikimedia Commons" href="https://commons.wikimedia.org/wiki/File:CPT-sound-physical-manifestation.svg"><img width="512" alt="CPT-sound-physical-manifestation" src="https://upload.wikimedia.org/wikipedia/commons/thumb/8/82/CPT-sound-physical-manifestation.svg/512px-CPT-sound-physical-manifestation.svg.png" /></a>
+</div>
+
+2. The frequency of a sound wave refers to how many cycles of the wave occur every second, where a cycleis defined in Hertz (Hz), or cycles per second. In other words, how many high points (peaks) of the wave occur every second?
+
+<div style={{textAlign:'center'}}>
+<a title="User:Superborsuk [CC BY-SA 3.0 (http://creativecommons.org/licenses/by-sa/3.0/)], via Wikimedia Commons" href="https://commons.wikimedia.org/wiki/File:Wave_frequency.gif"><img width="256" alt="Wave frequency" src="https://upload.wikimedia.org/wikipedia/commons/e/ea/Wave_frequency.gif" /></a>
+</div>
+
+<Marginalia>piano tuners violate this--it turns out that a piano sounds more "in tune" when its octaves aren't strict halvings and doublings of frequency (<a href="https://en.wikipedia.org/wiki/Stretched_tuning" target="_blank">stretched tuning</a>)</Marginalia>
+
+3. A doubling or halving of frequency is a change of one octave. Returning to the piano key

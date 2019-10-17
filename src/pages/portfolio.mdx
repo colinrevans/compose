@@ -1,0 +1,1088 @@
+# portfolio
+
+Solutions to exercises, marked red when wrong with an explanation and revision.
+
+## Table of Contents by Textbook
+
+- [Modern Operating Systems, 4th edition](#modern-operating-systems)
+- [Discrete Mathematics and its Applications](#discrete-mathematics-and-its-applications)
+
+<a name="modern-operating-systems" />
+
+## Modern Operating Systems, 4th edition.
+
+<Answers section="chapter 1" last>
+
+<qstn>
+1. What are the two main functions of an operating system?
+
+Operating systems abstract away the machine level specifics of how the system works, providing programmers with easier-to-reason-about encapsulations of the functionality of a system. This requires that the operating system manage hardware resources like, eg, memory, providing "virtual memory" that appears contiguous to user-level programs.
+
+</qstn>
+
+<qstn>
+2. In Section 1.4, nine different types of operating systems are described. Give a list of applications for each of these systems (one per operating systems type).
+
+*Mainframe OS.* Mainframe operating systems allow massive amounts of I/O, and are therefore suited for data centers that need to process many requests at once. Netlify, the host of this site, would be the kind of service that would need something like a mainframe operating system; everybody's site needs to be both hosted and managed according to the paygrade of the customer. As the section writes, however, "many mainframe operating systems are gradually being replaced by UNIX variants such as Linux": the fact that a business needs to process many requests at once doesn't necessarily imply it uses a mainframe operating system.
+
+*Server OS.* As expected, they run on servers; a PHP backend to, say, a commerce web app might be on a machine with a server operating system.
+
+*Multiprocessor OS.* Multiprocessor OS's create a single system out of multiple CPUs, sometimes including multiple machines. Because of this they need to take special care to keep concurrent processes from interfering with one another. Problems from many domains can leverage the processing power of a multiprocessor OS: google's foray into cloud gaming, where the majority of the graphics rendering happens on a server, not the client, is one application that could leverage a multiprocessor OS effectively. That said, personal computers can make use of multiple cores as well, for example in order to keep GUI functionality quick while programs do involved processing.
+
+*Handheld computer operating system.* Smartphone apps and launchers.
+
+*Embedded operating systems.* Internet of things devices, like light switches that are controllable from a distance.
+
+*Sensor-node operating systems.* Environment monitoring for light or some other variable that's nontrivial to measure.
+
+*Real time operating systems.* Any industrial setting where processes must happen at a certain time; eg, for mechanized assembly arms in factories. Hard real-time systems don't allow for any slack, whereas soft real-time systems do.
+
+*Smart card operating systems.* Only simple tasks, like electronic payments.
+
+</qstn>
+
+<qstn>
+3. What is the difference between timesharing and multiprogramming systems?
+
+Multiprogramming allows the CPU to run another job if one job becomes blocking. Timesharing allows multiple programmers to access one system through their own online terminal: the CPU moves between jobs of active users.
+
+</qstn>
+
+<qstn>
+4. To use cache memory, main memory is divided into cache lines, typically 32 or 64 bytes long. An entire cache line is cached at once. What is the advantage of caching an entire line instead of a single byte or word at a time?
+
+Data stored in adjacent or nearby parts of memory is often necessary to complete a procedure. We usually want to, eg, cache the adjacent addresses of a C array rather than just one element.
+
+</qstn>
+
+<qstn>
+5. On early computers, every byte of data read or written was handled by the CPU (i.e., there was no DMA). What implications does this have for multiprogramming?
+
+Without a DMA, multiprogramming systems have to continually see through I/O operations like file reading. This means they can't switch to other jobs as easily or efficiently.
+
+</qstn>
+
+<qstn>
+6. Instructions related to accessing I/O devices are typically priveleged instructions, that is, they can be executed in kernel mode but not user mode. Give a reason why these instructions are priveleged.
+
+If they were not priveleged, user mode applications could demand that the most recent I/O input always go to it, so that other processes would never hear back from a blocking I/O call.
+
+</qstn>
+
+<qstn>
+7. The family-of-computers idea was introduced in the 1960s with the IBM System/360 mainframes. Is this idea now dead as a doornail or oes it live on?
+
+</qstn>
+
+<qstn>
+8. One reason GUIs were initially slow to be adopted was the cost of the hardware needed to support them. How much video RAM is needed to support a 25-line X 80-row character monochrome text screen? How much for a 1200x900-pixel 24-bit color bit-map? What was the cost of this RAM at 1980 prices ($5/KB)? How much is it now?
+
+</qstn>
+
+<qstn>
+9. There are several design goals in building an operating system, for example, resource utilization, timeliness, robustness, and so on. Give an example of two design goals that may contradict one another.
+
+</qstn>
+
+</Answers>
+
+<a name="discrete-mathematics-and-its-applications" />
+
+## Discrete Mathematics and its Applications
+
+<Marginalia>
+note: textbook has solutions only for odd-numbered exercises
+</Marginalia>
+
+### Chapter 1: The Foundations: Logic and Proofs
+
+<Answers section="1.1 Propositional Logic">
+
+<qstn>
+1.
+
+a. yes, true
+
+b. yes, false
+
+c. yes, true
+
+d. yes, false
+
+e. no, n/a
+
+f. no, n/a
+
+</qstn>
+
+<qstn>
+3.
+
+a. Mei does not have an mp3 player
+
+b. There is pollution in new jersey
+
+c. <m>2 + 1 \neq 3</m>
+
+d. The summer in Maine is not both hot and sunny
+
+</qstn>
+
+<qstn>
+5.
+
+a. Steve has less than or equal to 100 GB free disk space on his laptop
+
+b. Zach does not block emails and texts from jennifer
+
+c. <m>7 * 11 * 13 \neq 999</m>
+
+d. Diane did not ride her bike 100 miles on Sunday.
+
+</qstn>
+
+<qstn>
+7.
+
+n annual net
+acme 138 8
+nadir 87 5
+quixote 111 13
+
+a. false
+
+b. true
+
+c. true
+
+d. true (t implies t is true)
+
+e. true (t iff t is true)
+
+</qstn>
+
+<qstn>
+9.
+p: swimming at jersey shore is allowed
+q: sharks have been spotted near the shore
+
+a. sharks have no been spotted near the shore
+
+b. swimming at jersey shore is allowed and sharks have been spotted near the shore
+
+c. simming at jersey shore is not allowed or sharks have been spotted near the shore
+
+d. if swimming at jersey shore is allowed, then sharks have not been spotted at the shore.
+
+e. if sharks have not been spotted near the shore, then swimming at jersey shore is allowed
+
+f. if swimming at jersey shore is not allowed, then sharks have not been spotted near the shore
+
+g. swimming at jersey shore is allowed if and only if sharks have not been spotted near the shore
+
+h. swimming at jersey shore is not allowed and (swimming at jersey shore is allowed or sharks have not been spotted near the shore)
+
+</qstn>
+
+<qstn>
+11.
+p: it is below freezing
+q: it is snowing
+
+a. <m>p \land q</m>
+
+b. <m>p \land \neg q</m>
+
+c. <m>\neg p \land \neg q</m>
+
+d. <m>q \lor q</m>
+
+e. <m>p \implies q</m>
+
+f. <m>p \lor q \land p \implies \neg q</m>
+
+g. <m>p \implies q</m> <e>wrong:</e> 'necessary and sufficient' requires an iff. If you have an implies, then p can be false and q can be true and it can come out true. (f implies t is t)
+
+</qstn>
+
+<qstn>
+13. 
+p: you drive over 65 miles an hour
+q: you get a speeding ticket
+
+a. <m>\neg p</m>
+
+b. <m>p \land \neg q</m>
+
+c. <m>p \implies q</m>
+
+d. <m>\neg p \implies \neg q</m>
+
+e. <m>p \iff q</m> wrong. <m>p \implies q</m> (careful w/ whenevers and sufficiency. necessary and sufficient means iff, while whenever/sufficient means implies)
+
+f. <m>q \land \neg p</m>
+
+g. <m>q \iff p</m> wrong. <m>q \implies p</m>
+
+</qstn>
+
+<qstn>
+15. 11 and 13, w different variables
+
+n/a
+
+</qstn>
+
+<qstn>
+17.
+
+a. false
+
+b. true
+
+c. true
+
+d. true
+
+</qstn>
+
+<qstn>
+19.
+
+a. xor (people generally don't choose coffee and tea)
+
+b. xor (you can have a password shorter than eight characters
+with three digits)
+
+c. inclusive or (if you have both requisites, nbd)
+
+d. xor (you can't pay with both currencies)
+
+</qstn>
+
+<qstn>
+21.
+
+a. or, you must take one or the other or both. xor, you must take one or the other but not both. or is inferred.
+
+b. or, you get the loan or the cash or both. xor, you get loan or cash but not both. xor inferred.
+
+c. or, you can have two from column a or three from column b or all five. xor, you can have the two or the three but not all five. xor intended.
+
+d. or, school is closed when both conditions are met. xor, school is not closed when both conditions are met. or intended.
+
+</qstn>
+
+<qstn>
+23.
+
+too easy
+</qstn>
+
+<qstn>
+25.
+
+too easy
+</qstn>
+
+<qstn>
+27.
+
+a. if it snows today, i will ski tomorrow
+<m>p \implies q</m>
+inverse: <m>q \implies p</m>
+converse: <m>\neg p \implies \neg q</m>
+contrapositive: <m>\neq q \implies \neg p</m>
+
+b. I come to class whenever there is going to be a quiz
+<m>p \iff q</m>
+inverse: <m>q \iff p</m>
+converse: <m>\neg p \iff \neg q</m>
+contrapositive: <m>\neg q \iff \neg p</m>
+
+c. A positive integer is prime only if it has no divisors other than one and itself.
+<m>p \iff q</m>, so same as b, with p and q standing for different things.
+
+</qstn>
+
+<qstn>
+29.
+How many rows appear in a truth table for each of these compound propositions? (method: make a bit sequence, one bit for each proposition and return number of values that bit sequence can take)
+
+a. <m>p \implies \neg p</m>: <m>2^1 = 2</m>
+
+b. <m>(p \lor \neg r) \land (q \lor \neg s)</m>: <m>2^4 = 16</m>
+
+c. <m>q \lor p \lor \neg s \lor \neg r \lor \neg t \lor u</m>: <m>2^6 = 64</m>
+
+d. <m>(p \land r \land t) \iff (q \land t)</m>: <m>2^4 = 16</m>
+
+</qstn>
+
+<qstn>
+31.
+truth table, rote
+
+</qstn>
+
+<qstn>
+33. truth table, rote
+
+</qstn>
+
+<qstn>
+35. truth table, rote
+
+</qstn>
+
+<qstn>
+37. truth table, rote
+
+</qstn>
+
+<qstn>
+39. truth table, rote
+
+</qstn>
+
+<qstn>
+41. 
+
+the left hand side is true if any is true, the right hand side is true if any is not true. The and that joins left and right makes it all false if they're all the same, because then the left hand is true and the right hand is not or vice versa.
+
+</qstn>
+
+<qstn>
+43. 
+
+a. 
+1011110 OR 0100001: 1111111<br />
+1011110 XOR 0100001: 1111111<br />
+1011110 AND 0100001: 0000000
+
+b.
+11110000 OR 10101010: 11111010<br />
+11110000 XOR 10101010: 01011010<br />
+11110000 AND 10101010: 10100000
+
+c.
+0001110001 OR 1001001000: 1001111001<br />
+0001110001 XOR 1001001000: 0000111001<br />
+0001110001 AND 1001001000: 0001000000
+
+d.
+1111111111 OR 0000000000: 1111111111<br />
+1111111111 XOR 0000000000: 1111111111<br />
+1111111111 AND 0000000000: 0000000000
+
+</qstn>
+
+<qstn>
+45. fuzzy logic
+
+</qstn>
+
+<qstn>
+47. fuzzy logic
+
+</qstn>
+
+<qstn>
+49. The nth statement in a list of 100 statements is "Exactly n of the statements in this list are false."
+
+a. you can reorder the list of 100 statements such that all statements up to and including the nth are false. 100 - n statements are true.
+
+b. then you can reorder the list of 100 statements such that all statements up to and including the nth are false, but you do not know that the rest or true, or that 100 - n statements are true. # of true statements < 100 - n.
+
+c. 
+
+</qstn>
+
+</Answers>
+
+<Answers section="1.2 Applications of Propositional Logic">
+
+<qstn>
+1.
+
+<m>e \iff a</m>
+
+</qstn>
+
+<qstn>
+3.
+
+<m>g \iff \neg m \land r \land b</m>
+
+</qstn>
+
+<qstn>
+5.
+
+<m>e \iff a \land (a \lor b) \land r</m>
+
+</qstn>
+
+<qstn>
+7.
+
+a. <m>p \iff q</m>
+
+b. <m>p \land \neg q</m>
+
+c. <m>q \implies p</m>
+
+d. <m>\neg q \implies \neg p</m>
+
+</qstn>
+
+<qstn>
+9. 
+
+p: system is in multiuser state<br />
+q: system is operating normally<br />
+r: kernel is functioning<br />
+s: system is in interrupt mode
+
+<m>p \iff q</m>
+<m>q \implies r</m>
+<m>\neg r \lor s</m>
+<m>\neg p \implies s</m>
+<m>\neg s</m>
+
+by <m>\neg s</m>, <m>s</m> must be false.<br />
+by <m>\neg r \lor s</m>, <m>r</m> must also be false.<br />
+by <m>q \implies r</m>, <m>q</m> must be false.<br />
+by <m>p \iff q</m>, <m>p</m> must be false.
+
+but then <m>\neg p \implies s</m> is false, so it must be inconsistent.
+
+</qstn>
+
+<qstn>
+11.
+
+</qstn>
+
+</Answers>
+
+<Answers section="1.3 Propositional Equivalences">
+
+<qstn>
+1.
+
+a. <m>p</m> | <m>p \land T</m><br />
+t | t<br />
+f | f
+
+b. <m>p</m> | <m>p \lor F</m><br />
+t | t<br />
+f | f
+
+c. <m>p</m> | <m>p \land F</m><br />
+t | f<br />
+f | f
+
+d. <m>p</m> | <m>p \lor T</m><br />
+t | t<br />
+f | t
+
+e. <m>p</m> | <m>p \lor p</m><br />
+t | t<br />
+f | f
+
+f. <m>p</m> | <m>p \land p</m><br />
+t | t<br />
+f | f
+
+</qstn>
+
+<qstn>
+3.
+
+a. <m>p</m> | <m>q</m> | <m>p \lor q</m> | <m>q \lor p</m><br />
+t | t | t | t<br />
+f | t | t | t<br />
+t | f | t | t<br />
+f | f | f | f
+
+b. <m>p</m> | <m>q</m> | <m>p \land q</m> | <m>q \land p</m><br />
+t | t | t | t<br />
+f | t | f | f<br />
+t | f | f | f<br />
+f | f | f | f
+
+</qstn>
+
+<qstn>
+5.
+
+<p><m>p</m> | <m>q</m> | <m>r</m> | <m>p \land (q \lor r)</m> | <m>(p \land q) \lor (p \land r)</m><br />
+t | t | t | t | t<br />
+t | t | f | t | t<br />
+t | f | t | t | t<br />
+t | f | f | f | f<br />
+f | t | t | f | f<br />
+f | t | f | f | f<br />
+f | f | t | f | f<br />
+f | f | f | f | f</p>
+
+</qstn>
+
+<qstn>
+7. 
+
+a. jan is rich and happy --> jan is not rich or not happy or neither (inclusive or)
+
+b. carlos will bicycle or run tomorrow --> jan will neither bicycle nor run tomorrow.
+
+c. Mei walks or takes the bus to class --> mei will neither walk nor take the bus to class.
+
+d. Ibrahim is smart and hard working --> ibrahim is not smart or not hardworking or neither
+
+</qstn>
+
+<qstn>
+9.
+
+a. <m>p</m> | <m>q</m> | <m>p \land q</m> | <m>(p \land q) \implies p</m><br />
+t | t | t | t<br />
+t | f | f | t<br />
+f | t | f | t<br />
+f | f | f | t<br />
+so tautalogical.
+
+b. <m>p</m> | <m>q</m> | <m>p \lor q</m> | <m>p \implies (p \lor q)</m><br />
+t | t | t | t<br />
+t | f | t | t<br />
+f | t | t | t<br />
+f | f | f | t<br />
+so tautalogical.
+
+c. <m>p</m> | <m>q</m> | <m>p \implies q</m> | <m>\neg p \implies (p \implies q)</m><br />
+t | t | t | t<br />
+t | f | f | t<br />
+f | t | t | t<br />
+f | f | t | t<br />
+so tautological.
+
+d. <m>p</m> | <m>q</m> | <m>p \land q</m> | <m>p \implies q</m> | <m>(p \land q) \implies (p \implies q)</m><br />
+t | t | t | t | t<br />
+t | f | f | f | t<br />
+f | t | f | t | t<br />
+f | f | f | t | t<br />
+so tautological.
+
+e. <m>p</m> | <m>q</m> | <m>\neg(p \implies q)</m> | <m>\neg(p \implies q) \implies p</m><br />
+t | t | f | t<br />
+t | f | t | t<br />
+f | t | f | t<br />
+f | f | f | t<br />
+so tautological.
+
+</qstn>
+
+<qstn>
+11.
+
+a. <m>(p \land q) \implies p</m> is only false when the left hand side is true, the right false. So let's say p is false. then <m>p \land q</m> must be true, but it can't be, cause p is false.
+
+b. <m>p \implies (p \lor q)</m> is only false when the left hand side is true, the right false. So p must be true, but then (p \lor q) can never be false.
+
+c. p must be false, but then p \implies q is true no matter what. no luck.
+
+d. right hand side must be false, so p \implies q must be false, so p is true and q is false. but then p \land q is true, making the whole thing true.
+
+e. p must be false. but p \implies q must also be false, which is impossible.
+
+f. q must be true. but then p \implies q can never be false, because for it to be false q must be true.
+
+</qstn>
+
+<qstn>
+13.
+
+a. <m>p</m> | <m>q</m> | <m>p \land q</m> | <m>p \land (p \land q)</m><br />
+t | t | t | t<br />
+t | f | f | f<br />
+f | t | f | f<br />
+f | f | f | f
+
+b. <m>p</m> | <m>q</m> | <m>p \lor q </m> | <m>p \land (p \lor q)</m><br />
+t | t | t | t<br />
+t | f | t | t<br />
+f | t | t | f<br />
+f | f | f | f
+
+</qstn>
+
+<qstn>
+15.
+
+left hand side must be true, the right hand false.<br />
+so <m>\neg p</m> must be false, so <m>p</m>is true.<br />
+both terms in the and of the left side must be true.<br />
+since p is true, q must be true for the implies to work out.<br />
+but if q is true then the left hand side of the and must be true, and <m>\neg q</m> is false.
+
+</qstn>
+
+<qstn>
+17. 
+
+<p><m>\neg (p \iff q)</m> means p and q are not logically equivalent. <m>p \iff \neg q</m> says the same thing: p is logically equivalent to q's inverse, or, p and q are not logically equivalent.</p>
+
+</qstn>
+
+<qstn>
+
+19. 
+
+<p><m>\neg p \iff q</m> means q is logically equivalent to p's inverse. <m>p \iff \neg q</m> means p is logically equivalent to q's inverse. Since there are only two options for both p and q, these must be the same.</p>
+
+</qstn>
+
+<qstn>
+21. 
+
+follow the same reasoning as 17 (positions are different, that's all).
+</qstn>
+
+<qstn>
+23. 
+
+the right hand side is only false when r is false and p \lor q is true. the left hand side is only false when r is false and either p or q is true.
+</qstn>
+
+<qstn>
+25. 
+
+the right hand side is only false when r is false and p \land q is true, or p is true and q is true. The left hand is false whenever r is false and both p and q are true.
+</qstn>
+
+<qstn>
+27. 
+
+p \iff q is to say p and q are logically equivalent. The only time p \implies q is false is when p is true and q is false. The only time q \implies p is false is when q is true and p is false. Both cover the two cases in which p is not q. So both expressions mean the same thing.
+</qstn>
+
+<qstn>
+29. 
+
+the whole thing can only be false if <m>p \implies r</m> can be false  while <m>(p \implies q) \land (q \implies r)</m> is true. is <m>p \implies </m> is false, then p is true and r is false. since p \implies q must be true, q must also be true. since q is true, r must also be true. But we know that r must be false. Thus, it's a tautology.
+</qstn>
+
+<qstn>
+31. 
+
+we can show that they are not logically equivalent if, for one set of values of p, q, and r, the expressions' values are different. Let's say p is false, q is true, and r is false. Then <m>(p \implies q) \implies r</m> becomes <m>t \implies r</m>, which is true. But <m>p \implies (q \implies r)</m> becomes <m>p \implies f</m>, which is false. Thus, both expressions are not logically equivalent.
+</qstn>
+
+<qstn>
+33. we can show that they are not logically equivalent if, for one set of values of p, q, r, and s, the expressions' values are different. Let's say p is false, q is true, r is false, and s is false. Then the first expression becomes t implies t, which is true. The second expression becomes false \implies false (t) \implies t \implies false (f), which is false. Thus, both expressions are not logically equivalent.
+
+</qstn>
+
+<qstn>
+35.
+
+a. <m>\neg p \land q</m>
+
+b. <m>\neg p \lor (\neg q \land (\neg r \lor F))</m>
+
+c. <m>(\neg p \lor q) \land (\neg q \lor T)</m>
+
+</qstn>
+
+</Answers>
+
+<Answers section="1.4 predicates and quantifiers">
+
+<qstn>
+1.
+
+a. true
+
+b. true
+
+c. false
+
+</qstn>
+
+<qstn>
+3.
+
+a. true
+
+b. true
+
+c. false
+
+d. false
+
+</qstn>
+
+<qstn>
+5.
+
+a. there exists astudent that spends more than five hours every weekday in class.
+
+b. all students spend more than five hours every weekday in class.
+
+c. there exists a student that does not spend more than five hours every weekday in class.
+
+d. all students do not spend more than five hours every weekday in class.
+</qstn>
+
+<qstn>
+7. 
+
+a. any person who is a comedian is funny
+
+b. all people are comedians and funny
+
+c. there's a person for whom being a comedian implies that they're funny
+
+d. there's a person who is both a comedian and funny
+
+</qstn>
+
+<qstn>
+9.
+
+a. <m>\exists x(P(x) \land Q(x))</m>
+
+b. <m>\exists x(P(x) \land \neg Q(x))</m>
+
+c. <m>\forall x(P(x) \lor Q(x))</m>
+
+d. <m>\forall x(\neg (P(x) \lor Q(x)))</m>
+</qstn>
+
+<qstn>
+11. 
+
+a. true
+
+b. true
+
+c. false
+
+d. false
+
+e. true
+
+f. false
+</qstn>
+
+<qstn>
+13.
+
+a. true
+
+b. true (<m>n = 0</m>)
+
+c. true (<m>n = 0</m>)
+
+d. false (dousn't hold when <m>n</m> is negative)
+</qstn>
+
+<qstn>
+15.
+
+a. true
+
+b. false (<m>\sqrt 2</m> is not an integer)
+
+c. true (counterexamples need n to be a fraction, not an integer)
+
+d. false
+</qstn>
+
+<qstn>
+17. 
+
+a. <m>P(0) \lor P(1) \lor P(2) \lor P(3) \lor P(4)</m>
+
+b. <m>P(0) \land P(1) \land P(2) \land P(3) \land P(4)</m>
+
+c. <m>\neg P(0) \land \neg P(1) \land \neg P(2) \land \neg P(3) \land \neg P(4)</m>
+</qstn>
+
+<qstn>
+19.
+
+a. <m>P(1) \lor P(2) \lor P(3) \lor P(4) \lor P(5)</m>
+
+b. <m>P(1) \land P(2) \land P(3) \land P(4) \land P(5)</m>
+
+c. the negation of (a), which, by demorgan over or, is <m>\neg P(1) \land \neg P(2) \land \neg P(3) \land \neg P(4) \land \neg P(5)</m>
+
+d. the negation of (b), which, by demorgan over and, is <m>\neg P(1) \lor \neg P(2) \lor \neg P(3) \lor \neg P(4) \lor \neg P(5)</m>
+</qstn>
+
+<qstn>
+21.
+
+a. true for domain of students in discrete math classes and students studying it on their own
+
+b. true for domain of 22y/o and older, false for people who are 21y/o and younger
+
+c. true for domain groups of 2 and only 2 biological siblings
+
+d. true for domain of single grandchildren
+</qstn>
+
+<qstn>
+23.
+
+a. <m>\exists x(Hindi(x))</m>. <m>\exists x(Hindi(x) \land InClass(x))</m>
+
+b. <m>\forall x(Friendly(x))</m>. <m>\forall x(InClass(x) \implies Friendly(x))</m>
+
+c. <m>\exists x(\neg BornInCalifornia(x))</m>. <m>\exists x(BornInCalifornia(x) \land InClass(x))</m>.
+
+d. <m>\exists x(BeenInMovie(x))</m>. <m>\exists x(BeenInMovie(x) \land InClass(x)).</m>
+
+e. <m>\neg \forall x(TakenCourseInLogicProgramming(x))</m>. <m>\neg \forall x(InClass(x) \implies \neg TakenCourseInLogicProgramming)</m>
+</qstn>
+
+<qstn>
+25.
+
+a. <m>\neg \exists x(Perfect(x))</m>
+
+b. <m>\neg \forall x(Perfect(x))</m>
+
+c. <m>\forall x(Friend(x) \implies Perfect(x))</m>
+
+d. <m>\exists x(Friend(x) \land Perfect(x))</m>
+</qstn>
+
+<qstn>
+27.
+
+a. domain: all people. <m>\exists x (StudentInSchool(x) \land livedInVietnam(x))</m><br/>
+domain: school. <m>\exists x (livedInVietnam(x))</m><br/>
+domain: school. <m>\exists x (livedInCountry(x, Vietnam))</m>
+
+b.domain: all people. <m>\exists x (studentInSchool(x) \land \neg SpeakHindi(x))</m><br/>
+domain: school. <m>\exists x (\neg speakHindi(x))</m><br/>
+domain: school. <m>\exists x (\neg canSpeak(x, Hindi))</m>
+
+c. domain: all people. <m>\exists x (studentInSchool(x) \land knowsJava(x) \land knowsProlog(x) \land knowsC++(x))</m><br/>
+domain: school. <m>\exists x (knowsJava(x) \land knowsProlog(x) \land knowsC++(x))</m><br/>
+domain: school. <m>\exists x (knows(x, Java) \land knows(x, Prolog) \land knows(x, C++))</m>
+
+d. domain: all people. <m>\exists x (studentInClass(x) \land enjoysThaiFood(x))</m><br/>
+domain: class. <m>\exists x (enjoysThaiFood(x))</m><br/>
+domain: class. <m>\exists x (enjoys(x, thaiFood))</m>
+
+e. domain: all people. <m>\exists x (studentInClass(x) \land \neg playsHockey(x))</m><br />
+domain: class. <m>\exists x (\neg playsHockey(x))</m><br />
+domain: class. <m>\exists x (\neg plays(x, Hockey))</m>
+
+</qstn>
+
+<qstn>
+29.
+
+a. <m>\neg \forall x (\neg tautology(x))</m> NOTE: so simply <m>\exists x (tautology(x))</m>
+
+b. <m>\forall x(\neg contradiction(x) \iff tautology(x))</m> <e>ERROR:</e> I negated the fact that x, some proposition, is a contradiction, not the proposition x that is a contradiction. And I strengthened the sentence to an iff, when it's just an implies. should be <m>\forall x(contradiction(x) \implies tautology(\neg x))</m>.
+
+</qstn>
+
+<qstn>
+31.
+
+a. <m>\forall yQ(0, y, 0)</m> -- > <m>Q(0, 0, 0) \land Q(0, 1, 0)</m>
+
+b. <m>\exists xQ(x, 1, 1)</m> -- > <m>Q(0, 1, 1) \lor Q(1, 1, 1) \lor Q(2, 1, 1)</m>
+
+c. <m>\exists z\neg Q(0, 0, z)</m> -- > <m>\neg Q(0, 0, 0) \lor \neg Q(0, 0, 1)</m>
+
+d. <m>\exists x\neg Q(x, 0, 1)</m> -- > <m>\neg Q(0, 0, 1) \lor \neg Q(1, 0, 1)</m>
+</qstn>
+
+<qstn>
+33.
+
+a. Some old dogs can learn new tricks -- > <m>\exists d(canLearnNewTricks(d))</m>.<br />
+negated, <m>\neg \exists d(canLearnNewTricks(d))</m> -- > <m>\forall d (\neg canLearnNewTricks(d))</m>.<br />
+english: no old dogs can learn new tricks.
+
+b. No rabbit knows calculus -- > <m>\forall r(\neg knowsCalculus(r))</m>.<br />
+negated, <m>\exists r(knowsCalculus(r))</m><br />
+Some rabbit knows calculus.
+
+c. Every bird can fly -- > <m>\forall b(canFly(b))</m>.<br />
+negate, <m>\exists b(\neg canFly(b))</m><br />
+Not all birds can fly.
+
+d. There is a dog that can talk -- > <m>\exists d(canTalk(d))</m>.<br />
+negated, <m>\forall d(\neg canTalk(d))</m><br />
+No dog can talk.
+
+e. There is no one in this class who knows French and Russian.<br />
+let the domain for x be people in this class. <m>\forall s(\neg knowsFrench(s) \land \neg knowsRussian(s))</m><br />
+negated: <m>\exists s(knowsFrench(s) \land knowsRussian(s))</m><br />
+someone in this class knows french and russian.
+</qstn>
+
+<qstn>
+35.
+
+a. no counterexample. (if domain were rationals, we'd have countably infinite)
+
+b. 0 is neither greater than 0 or less than 0
+
+c. 0 (<m>0 \neq 1</m>)
+
+</qstn>
+
+</Answers>
+
+<Answers section="1.5 nested quantifiers">
+
+<qstn>
+1.
+
+a. for every real number x there exists a real number y that is greater.
+
+b. for all real numbers x and y, if both x and y are greater than or equal to zero, their product
+is greater than or equal to zero also.
+
+c. For all real numbers x and y, there exists a real number z, their difference.
+
+</qstn>
+
+<qstn>
+3.
+
+a. there is a student x that has sent an email to another student y.
+
+b. there is a student x who has sent an email to all students in the class.
+
+c. all students have sent an email to a certain student y.
+
+d. some student y has sent an email to all students in the class.
+
+e. all students have sent an email to student x.
+
+f. each student has sent emails to all other students.
+
+</qstn>
+
+<qstn>
+5.
+
+a. Sarah Smith has visited www.att.com.
+
+b. Some student has visited imdb.org
+
+c. Jose Orez has visited some website x.
+
+d. There's a website that both Ashok Puri and Cindy Yoon have visited
+
+e. There's some student who, along with David Belcher, has visited site z.
+
+f. two different students x and y have visited website z if and only if the other has also.
+</qstn>
+
+<qstn>
+
+7.
+
+a. Abdallah Hussein doesn't like Japanese food
+
+b. there exists a student who likes korean food and all students like mexican food
+
+c. There's a cuisine that both Jay Johnson and Monique Arsenault like.
+
+d. No two students like the same cuisine.
+
+e. There are two students with the same cuisine preferences
+
+f. There's a cuisine that one student likes if an only if another student likes it
+</qstn>
+
+<qstn>
+9.
+
+a. <m>\forall x (L(x, Jerry))</m>
+
+b. <m>\forall x \exists y (L(x, y))</m>
+
+c. <m>\exists y \forall x (L(x, y))</m>
+
+d. <m>\neg \exists x \forall y(L(x, y))</m>
+
+e. <m>\exists y (\neg L(Lydia, y))</m>
+
+f. <m>\exists y \neg \exists x (L(x, y))</m>
+
+g. <m>\exists y (\forall X L(x, y) \land \forall w(\forall z (L(w, z) \implies y = z)))</m>. <e>NOTE:</e> had to look this one up. the question calls for *exactly one* object of affection, and I was struggling to find a way to express it. Doing even numbered exercises for this one too.
+
+h. <m>\exists x \exists z (L(Lynn, x) \land L(Lynn, y) \land x \neq z \land \forall w(L(Lynn, w) \implies w = x \lor w = z))</m>
+
+i. <m>\forall x (L(x, x))</m>
+
+j. <m>\exists x (L(x, x) \land \forall w (L(x, w) \implies w = x))</m>. <e>NOTE:</e> Solution has a different answer, but I'm thinking they might be equivalent. Their solution is <m>\exists x \forall y (L(x, y) \iff x = y)</m>. So, let's make a truth table with a group of, say, 4 people: a, b, c, d, and say everyone only loves themselves. Does it come out all true? If both equations are right, they are logically equivalent, and will both come out equivalent for every permutation of its inputs.
+
+<p><m>x</m> | <m>w</m> | <m>L(x, x)</m> | <m>L(x, w)</m> | <m>w = x</m> | <m>L(x, w) \implies w = x</m> | <m>L(x, x) \land ...</m><br />
+a | a | true    | true    | true  | true                   | true<br />
+a | b | true    | false    | false | true                  | true<br />
+a | c | true    | false    | false | true                  | true<br />
+a | d | true    | false    | false | true                  | true<br />
+we can stop here, because we know that if we switch x to something other than a we'll get the same table with positions rotated around.</p>
+
+<p><m>x</m> | <m>y</m> | <m>L(x, y)</m> | <m>x = y</m> | <m>L(x, y) \iff x = y</m><br />
+a | a | true    | true  | true<br />
+a | b | false    | false | true<br />
+a | c | false    | false | true<br />
+a | d | false    | false | true<br /></p>
+
+So they are equivalent. How could I have found that out without making a truth table?
+
+</qstn>
+
+<qstn>
+10.
+
+a. <m>\forall x(Fool(x, Fred))</m>
+
+b. <m>\forall x(Fool(Evelyn, x))</m>
+
+c. <m>\forall x \exists x (Fool(x, y))</m>
+
+d. <m>\neg \exists x \forall y (Fool(x, y))</m>
+
+e. <m>\exists x \forall y (Fool(x, y))</m>
+
+f. <m>\neg \exists x (Fool(x, Fred) \land Fool(x, Jerry))</m>
+
+g. <m>\exists x \exists y (Fool(Nancy, x) \land Fool(Nancy, y) \land \forall w(Fool(Nancy, w) \implies x = w \lor y = w))</m>
+
+h. <m>\forall x \exists y (Fool(x, y) \land \forall k(Fool(x, k) \implies k = y))</m>
+
+i. <m>\forall x (\neg Fool(x, x))</m>
+
+j. <m>\exists x \exists y (Fool(x, y) \land \forall w (Fool(x, w) \implies w = y) \land x \neq y)</m>
+
+</qstn>
+
+<qstn>
+11.
+
+a. <m>A(Lois, Professor Michaels)</m>
+
+b. <m>\forall x(S(x) \implies A(x, Professor Gross))</m>
+
+c. <m>\forall x(F(x) \implies A(x, Professor Miller) \land A(Professor Miller, x))</m>
+
+d. <m>\exists x \forall y((S(x) \land F(y)) \implies \neg A(x, y))</m>
+
+</qstn>
+
+</Answers>

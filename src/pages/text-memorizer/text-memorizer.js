@@ -1,10 +1,12 @@
 import React, { useRef, useState, useEffect } from "react"
 import { Link } from "gatsby"
-import SEO from "../components/seo.js"
 import Button from "@material-ui/core/Button"
 import Table from "@material-ui/core/Table"
 import TableCell from "@material-ui/core/TableCell"
 import TableBody from "@material-ui/core/TableBody"
+import H2 from "../../components/base/H2.js"
+import { fontFamily } from "../../components/base/theme.js"
+import Popup from "../../components/base/Popup.js"
 import TableHead from "@material-ui/core/TableHead"
 import TableRow from "@material-ui/core/TableRow"
 import invariant from "invariant"
@@ -154,7 +156,8 @@ const Word = props => {
         { ...props.word, showAnnotater: false, annotation: annotationText },
         props.word.lineIdx,
         props.word.wordIdx
-      )
+      ),
+      156
     )
   }
 
@@ -193,7 +196,8 @@ const Word = props => {
                       ),
                       props.word.lineIdx,
                       props.word.wordIdx
-                    )
+                    ),
+                    196
                   )
                 } else if (props.word.showAnnotater) {
                   setParsed(
@@ -202,7 +206,8 @@ const Word = props => {
                       { ...props.word, showAnnotater: false },
                       props.word.lineIdx,
                       props.word.wordIdx
-                    )
+                    ),
+                    205
                   )
                 }
                 e.stopPropagation()
@@ -236,10 +241,13 @@ const shouldReplace = (n = 5) => {
 
 const allDone = (options, parsed, n = DONE) => {
   if (parsed === undefined) return false
+  if (options.length !== parsed.length) return false
+  /*
   invariant(
     options.length === parsed.length,
     "all done given lists of unequal length"
   )
+  */
   for (let i = 0; i < options.length; i++) {
     if (isNewline(parsed, i)) continue
     for (let j = 0; j < options[i].length; j++) {
@@ -285,13 +293,28 @@ const optionsAreEqual = (oldOptions, newOptions, parsedWords) => {
 
 export const TextMemorizer = props => {
   const [rawText, setRawText] = useState("")
-  const [parsed, setParsed] = useState([])
+  const [parsed, setParsdd] = useState([])
   const [options, setOptions] = useState([])
   const [history, setHistory] = useState([parsed])
+  const [saved, setSaved] = useState()
   const [idx, setIdx] = useState(0)
   const [cheat, setCheat] = useState(false)
   const [showInput, setShowInput] = useState(true)
   const [showMemorizer, setShowMemorizer] = useState(false)
+  const setParsed = (p, n) => {
+    console.log("parsed called with, ", p, "from ", n)
+    setParsdd(p)
+  }
+  console.log("cur parsed, ", parsed)
+  console.log("cur raw, ", rawText)
+
+  // load saved
+  useEffect(() => {
+    let save = localStorage.getItem("texts")
+    if (!save) return
+    console.log("saved", save)
+    setSaved(JSON.parse(save))
+  }, [])
 
   const handleKeydown = e => {
     if (e.defaultPrevented) return
@@ -307,7 +330,8 @@ export const TextMemorizer = props => {
         stepMemorizer()
       }
       if (e.keyCode === 40 || e.keyCode === 74) stepAll() //down arrow
-      if ([37, 38, 39, 40, 72, 75, 76, 74]) e.preventDefault()
+      if ([37, 38, 39, 40, 72, 75, 76, 74].includes(e.keyCode))
+        e.preventDefault()
     }
     //e.preventDefault();
   }
@@ -383,6 +407,20 @@ export const TextMemorizer = props => {
     pushHistory(newOptions, idx)
   }
 
+  const save = () => {
+    console.log(rawText)
+    console.log(parsed)
+    let newSave = saved ? [...saved, rawText] : [rawText]
+    setSaved(s => (s ? [...s, rawText] : [rawText]))
+    localStorage.setItem("texts", JSON.stringify(newSave))
+  }
+
+  const deleteSave = idx => {
+    let filtered = saved.filter((x, i) => i !== idx)
+    localStorage.setItem("texts", JSON.stringify(filtered))
+    setSaved(filtered)
+  }
+
   const stepAll = () => {
     if (allDone(history[idx], parsed)) return
     if (history[idx] === undefined) return
@@ -395,6 +433,23 @@ export const TextMemorizer = props => {
     pushHistory(newOptions, idx)
   }
 
+  const loadFromSaved = idx => {
+    setRawText(saved[idx])
+    let p = saved[idx].split("\n").map((line, lineIdx) =>
+      line
+        .replace(/\s{2,}/g, " ")
+        .split(" ")
+        .map((word, wordIdx) => newWord(word, lineIdx, wordIdx))
+    )
+    let o = p.map(line => line.map(word => 0))
+    console.log("o", o, "p", p)
+    setParsed(p, 439)
+    setOptions(o)
+    setIdx(0)
+    setHistory([o])
+    console.log("hit")
+  }
+
   const goBack = () => {
     if (idx < history.length - 1) setIdx(i => i + 1)
   }
@@ -404,10 +459,7 @@ export const TextMemorizer = props => {
   }
 
   return (
-    <>
-      <SEO title="Text Memorizer" />
-      <h1>Text Memorizer</h1>
-
+    <div>
       {showInput ? (
         <>
           <textarea
@@ -420,18 +472,27 @@ export const TextMemorizer = props => {
                   .map((word, wordIdx) => newWord(word, lineIdx, wordIdx))
               )
               let o = p.map(line => line.map(word => 0))
-              setParsed(p)
+              setParsed(p, 469)
               setOptions(o)
               setIdx(0)
               setHistory([o])
             }}
             id="poem"
             name="poem"
-            style={{ width: "100%", height: "50vh" }}
+            style={{
+              width: "50%",
+              maxWidth: "100%",
+              minWidth: 250,
+              minHeight: 50,
+              height: "150px",
+              fontSize: 12,
+              lineHeight: "1.2em",
+            }}
             value={rawText}
           />
           <br />
           <Button
+            style={{ transform: "scale(0.7)", transformOrigin: "top left" }}
             onClick={() => {
               setShowMemorizer(true)
               setShowInput(false)
@@ -445,12 +506,12 @@ export const TextMemorizer = props => {
       ) : null}
       {!showInput ? (
         <div
-          style={{ height: 2000, overflowY: "hidden" }}
           onClick={e =>
             setParsed(
               parsed.map(line =>
                 line.map(word => ({ ...word, showAnnotater: false }))
-              )
+              ),
+              504
             )
           }
         >
@@ -460,17 +521,20 @@ export const TextMemorizer = props => {
               setParsed,
             }}
           >
-            <h2>text</h2>
             <div
               style={{
                 fontFamily: "Source Code Pro, monospace",
-                fontSize: "88%",
-                fontWeight: "100",
+                fontSize: 13,
+                fontWeight: "400",
+                lineHeight: "1.3em",
+                marginBottom: 50,
+                width: "100%",
+                maxWidth: 500,
               }}
             >
               {parsed.map((line, lineIdx) =>
                 !(line.length === 1 && line[0].text === "") ? (
-                  <p>
+                  <p style={{ marginBottom: 0 }}>
                     {line
                       .map((word, wordIdx) => (
                         <TextContext.Consumer>
@@ -500,62 +564,78 @@ export const TextMemorizer = props => {
                 )
               )}
             </div>
-            <Button
-              onClick={() => stepMemorizer()}
-              disabled={allDone(history[idx], parsed)}
+            <div
+              style={{ transform: "scale(0.7)", transformOrigin: "top left" }}
             >
-              step (→)
-            </Button>
-            <Button
-              onClick={() => stepAll()}
-              disabled={allDone(history[idx], parsed)}
+              <Button
+                onClick={() => stepMemorizer()}
+                disabled={allDone(history[idx], parsed)}
+              >
+                step (→)
+              </Button>
+              <Button
+                onClick={() => stepAll()}
+                disabled={allDone(history[idx], parsed)}
+              >
+                step all (↓)
+              </Button>
+              <Button
+                onMouseDown={e => setCheat(true)}
+                onMouseUp={e => setCheat(false)}
+                onTouchStart={e => setCheat(true)}
+                onTouchEnd={e => setCheat(false)}
+                disabled={allDone(history[idx], parsed, 0)}
+              >
+                cheat (<span style={{ margin: 0, fontSize: "80%" }}>\</span>)
+              </Button>
+              <Button
+                onClick={() => goBack()}
+                disabled={idx >= history.length - 1}
+              >
+                undo (←)
+              </Button>
+              <Button onClick={() => goForward()} disabled={idx === 0}>
+                redo
+              </Button>
+
+              {/*
+                  <Button
+                  onClick={() => {
+                  console.log(history[idx]);
+                  console.log("parsed", parsed);
+                  }}
+                  >
+                  log
+                  </Button>
+                */}
+            </div>
+            <div
+              style={{ transform: "scale(0.7)", transformOrigin: "top left" }}
             >
-              step all (↓)
-            </Button>
-            <Button
-              onMouseDown={e => setCheat(true)}
-              onMouseUp={e => setCheat(false)}
-              onTouchStart={e => setCheat(true)}
-              onTouchEnd={e => setCheat(false)}
-              disabled={allDone(history[idx], parsed, 0)}
-            >
-              cheat (<span style={{ margin: 0, fontSize: "80%" }}>\</span>)
-            </Button>
-            <Button
-              onClick={() => goBack()}
-              disabled={idx >= history.length - 1}
-            >
-              undo (←)
-            </Button>
-            <Button onClick={() => goForward()} disabled={idx === 0}>
-              redo
-            </Button>
-            <Button
-              style={{ marginLeft: "60px" }}
-              onClick={() => reset()}
-              disabled={allDone(history[idx], parsed, 0)}
-            >
-              reset (↑)
-            </Button>
-            <Button
-              onClick={() => {
-                setShowInput(true)
-                setShowMemorizer(false)
-              }}
-            >
-              edit
-            </Button>
-            {/*
-            <Button
-              onClick={() => {
-                console.log(history[idx]);
-                console.log("parsed", parsed);
-              }}
-            >
-              log
-            </Button>
-            */}
-            <br />
+              <Button
+                onClick={() => reset()}
+                disabled={allDone(history[idx], parsed, 0)}
+              >
+                reset (↑)
+              </Button>
+              <Button
+                onClick={() => {
+                  setShowInput(true)
+                  setShowMemorizer(false)
+                }}
+              >
+                edit
+              </Button>
+
+              <Button
+                onClick={() => {
+                  save()
+                }}
+              >
+                save
+              </Button>
+            </div>
+
             {hasAnnotations(parsed) ? (
               <>
                 <h2>annotations</h2>
@@ -584,7 +664,59 @@ export const TextMemorizer = props => {
           </TextContext.Provider>
         </div>
       ) : null}
-    </>
+      {has(saved) ? (
+        <>
+          <H2 style={{ display: "inline-block", marginTop: 50 }}>
+            saved{" "}
+            <Popup>
+              saved using the{" "}
+              <a href="https://developer.mozilla.org/en-US/docs/Web/API/Web_Storage_API">
+                localStorage API
+              </a>
+              .
+            </Popup>
+          </H2>
+          <dl>
+            {saved.map((save, idx) => (
+              <>
+                <dt style={{ fontFamily, fontSize: 13, fontWeight: 400 }}>
+                  {save.length < 40 ? save : save.substr(0, 40).trim() + "..."}
+                </dt>
+                <dd style={{ marginBottom: 0 }}>
+                  <div
+                    style={{
+                      transform: "scale(0.8)",
+                      transformOrigin: "top left",
+                      display: "inline-block",
+                    }}
+                  >
+                    <Button
+                      style={{ transform: "scale(0.8)" }}
+                      onClick={e => {
+                        loadFromSaved(idx)
+                        e.stopPropagation()
+                      }}
+                    >
+                      load
+                    </Button>
+
+                    <Button
+                      style={{ transform: "scale(0.8)" }}
+                      onClick={e => {
+                        deleteSave(idx)
+                        e.stopPropagation()
+                      }}
+                    >
+                      del
+                    </Button>
+                  </div>
+                </dd>
+              </>
+            ))}
+          </dl>
+        </>
+      ) : null}
+    </div>
   )
 }
 

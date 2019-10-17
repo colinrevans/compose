@@ -113,9 +113,17 @@ class Note {
 
   get enharmonic() {
     if (this.accidental === "") return this
-    console.log(enharmonics[this.toString()])
-    if (Object.keys(enharmonics).includes(this.toString())) {
-      return this.reset(enharmonics[this.toString()])
+    console.log(enharmonics[`${this.letter}${this.accidental}`])
+    let str = `${this.letter}${this.accidental}`
+    let oct = this.octave
+    if (Object.keys(enharmonics).includes(str)) {
+      if (str === "B#") oct += 1
+      if (str === "Cb") oct -= 1
+      console.log("lala", enharmonics[str])
+      console.log("le", oct)
+      console.log(`${enharmonics[str]}${oct}`)
+      let n = new Note(`${enharmonics[str]}${oct}`)
+      return this.reset(n)
     }
     return this
   }
@@ -149,12 +157,16 @@ class Note {
     return `${this.note}${this.accidental}${this.octave}`
   }
 
+  transposeByHalfSteps(steps) {
+    return new Note(this.midiNoteNumber + steps)
+  }
+
   toJSON() {
     return {
       type: "note",
       letter: this.letter,
       accidental: this.accidental,
-      octave: this.octaveve,
+      octave: this.octave,
     }
   }
 }
@@ -163,15 +175,15 @@ export default Note
 
 // TODO double sharps and double flats !
 const enharmonics = {
-  ["Cb4"]: "B3",
-  ["C#4"]: "Db4",
-  ["D#4"]: "Eb4",
-  ["E#4"]: "F4",
-  ["Fb4"]: "E4",
-  ["F#4"]: "Gb4",
-  ["G#4"]: "Ab4",
-  ["A#4"]: "Bb4",
-  ["B#4"]: "C5",
+  ["Cb"]: "B",
+  ["C#"]: "Db",
+  ["D#"]: "Eb",
+  ["E#"]: "F",
+  ["Fb"]: "E",
+  ["F#"]: "Gb",
+  ["G#"]: "Ab",
+  ["A#"]: "Bb",
+  ["B#"]: "C",
 }
 ;(() => {
   // reverse them too
@@ -180,12 +192,6 @@ const enharmonics = {
   for (let i = 0; i < vals.length; i++) {
     enharmonics[vals[i]] = keys[i]
   }
-  // and go ahead and make the values Notes, not their string values.
-  keys = Object.keys(enharmonics)
-  for (let key of keys) {
-    enharmonics[key] = new Note(enharmonics[key])
-  }
-  Object.freeze(enharmonics)
 })()
 
 const lettersToPcs = {

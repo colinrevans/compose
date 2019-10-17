@@ -1,0 +1,53 @@
+# summary of theorems and definitions
+
+## disquisitiones arithmeticae (Gauss, 1798)
+
+*Note: The following comes from the Arthur A. Clarke translation of Carl Friedrich Gauss's 1798 landmark* Disquisitiones Arithmeticae, *a treatise that helped establish number theory as a discipline. Clarke notes, in his introduction, that "an apology may be needed for carrying over into English much of the flavor of Gauss' Ciceronian style." On the contrary, the reader finds the translation plenty cogent; I recommend its [purchase](https://yalebooks.yale.edu/book/9780300094732/disquisitiones-arithmeticae). Hardly an expert in math, I've made a short reference of the work, without proofs (how lacking! to read Gauss without them!), to help form the bedrock for future proofs of my own, should they come. Figured I'd upload it here too.* **This is only a small portion of the original**.
+
+### 1. congruent numbers in general
+
+1. If a number <m>a</m> divides the difference of the numbers <m>b</m> and <m>c</m> and <m>c</m>, <m>b</m> and <m>c</m> are said to be *congruent relative to a*; if not, <m>b</m> and <m>c</m> are *noncongruent*. The number <m>a</m> is called the *modulus*. If the numbers <m>b</m> and <m>c</m> are congruent, each of them is called a *residue* of the other. If they are noncongruent they are called *nonresidues*.
+
+2. Given *a*, all its residues modulo *m* are contained in the formula <m>a + km</m> where <m>k</m> is an arbitrary integer. ... Henceforth we shall designate congruence by the symbol <m>\equiv</m>, joining to it in parentheses the modulus when it is necessary to do so; e.g. <m>-7 \equiv 15 \bmod 11</m>, <m>-16 \equiv 9 \bmod 5</m>.
+
+3. **THEOREM**. *Let m successive integers <m>a, a + 1, a + 2, ... a + m - 1</m> and another integer A be given; then one, and only one, of these integers will be congruent to A relative to m.*
+
+4. Each number therefore will have a residue in the series <m>0, 1, 2, ... m - 1</m> and in the series <m>0, -1, -2, ... -(m - 1)</m>. We will call these the *least residues*, and it is obvious that unless <m>0</m> is a residue, they always occur in pairs, one *positive* and one *negative* ... each number has a residue which is not larger than half the modulus. It will be called the *absolutely least* residue.
+
+5. Having established these concepts, let us collect the properties of congruences that are immediately obvious.
+  > *Numbers that are congruent relative to a composite modulus are also congruent relative to any divisor of the modulus.* <br />
+
+  > *If several numbers are congruent to the same number relative to the same modulus, they are congruent to one another (relative to the same modulus).*<br />
+  > ...<br />
+
+  > *Congruent numbers have the same least residues: noncongruent numbers have different least residues.*
+
+6. *Given the numbers <m>A, B, C,</m> etc. and other numbers <m>a, b, c,</m> etc. that are congruent to them relative to some modulus, i.e. <m>A \equiv a</m>, <m>B \equiv b</m>, etc., then <m>A + B + C + etc. \equiv a + b + c + etc.</m>*
+
+7. *If <m>A \equiv a</m> then also <m>kA \equiv ka</m>. If <m>A \equiv a, B \equiv b,</m> then <m>AB \equiv ab</m>, because <m>AB \equiv Ab \equiv ba</m>.*
+
+8. *Given any numbers whatsoever <m>A, B, C, etc.</m> and other numbers <m>a, b, c, etc.</m> which are congruent to them, i.e. <m>A \equiv a, B \equiv b, etc.</m>, the products of each will be congruent; i.e. <m>ABC</m> etc. <m>\equiv abc</m> etc. If <m>A \equiv a</m> and <m>k</m> is a positive integer, <m>A^k \equiv a^k</m>.*
+
+9. *Let <m>X</m> be an algebraic function of the indeterminate <m>x</m> of the form <bm>Ax^a + Bx^b + Cx^c + etc.</bm> where <m>A, B, C, etc.</m> are any integers; <m>a, b, c, etc.</m> are nonnegative integers. Then if <m>x</m> is given values which are congruent relative to the same modulus, the resulting values of the function <m>X</m> will also be congruent.*
+
+10. Thus, if all integers are substituted consecutively for <m>x</m>, and the corresponding values of the function <m>X</m> are reduce to least residues, they will form a sequence in which after an interval of <m>m</m> terms (<m>m</m> being the modulus) the same terms will recur; that is, the sequence will be formed by a *period* of <m>m</m> terms repeated infinitely often.
+
+11. ... suppose <m>X</m> is a function in unknown <m>x</m> of the form <bm>x^n + Ax^{n-1} + Bx^{n-2} + etc. + N</bm> where <m>A, B, C, etc.</m> are integers, <m>n</m> a positive integer (it is known that all algebraic equations can be reduced to this form). It is evident that in the equation <m>X = 0</m> there exists no rational root if for some modulus the congruence <m>X \equiv 0</m> cannot be satisfied. But this criterion will be discussed more fully in Section VIII. From this example some small idea of the usefulness of these investigations can be gained.
+
+### 2. congruences of the first degree
+
+13. **THEOREM**. *The product of two positive numbers each of which is smaller than a given prime number cannot be divided by this prime number.*
+
+14. *If neither <m>a</m> nor <m>b</m> can be divided by a prime number <m>p</m>, the product <m>ab</m> cannot be divided by <m>p</m>.*
+
+15. *If none of the numbers <m>a, b, c, d, etc.</m> can be divided by a prime <m>p</m> neither can their product <m>abcd</m> etc.*
+
+16. **THEOREM**. *A composite number can be resolved into prime factors in only one way.*
+
+17. Thus if a composite number <m>A</m> is the product of <m>B, C, D, etc.</m> it is clear that among the prime factors of <m>B, C, D, etc.</m> none may appear that is not a factor of <m>A</m>. And each of these factors must appear in the resolution of <m>A</m> as many times as it appears altogether in <m>B, C, D, etc.</m>. Thus we get a criterion for determing whether a number <m>B</m> divides a number <m>A</m> or not. <m>B</m> will divide <m>A</m> provided it contains no other prime number factors than <m>A</m> does and contains none of them more often than <m>A</m>. If either of these conditions is absent, <m>B</m> will not divide <m>A</m>.
+
+18. If therefore <m>A = a^{\alpha}b^{\beta}c^{\gamma}</m> etc., <m>K = k^{\kappa}l^{\lambda}m^{\mu}</m> etc. and the primes <m>a, b, c,</m> etc., <m>k, l, m,</m> etc. are all different, then clearly <m>A</m> and <m>K</m> have no common divisor except <m>1</m>, or in other words they are prime relative to each other.
+
+19. *If the numbers <m>a, b, c, etc.</m> are prime relative to some other number <m>k</m>, then their product <m>abc</m> etc. is also prime relative to <m>k</m>. If the numbers <m>a, b, c,</m> etc. are prime relative to each other, and each of them divides some other number <m>k</m>, then their product divides <m>k</m>. ... if two numbers <m>m, n</m> are congruent relative to several moduli <m>a, b, c,</m> etc. which are prime relative to each other, they will also be congruent relative to their product. ... if a prime relative to <m>b</m> and <m>ak</m> is divisible by <m>b</m>, then <m>k</m> is also divisible by <m>b</m>.*
+
+WIP

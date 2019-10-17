@@ -4,6 +4,7 @@ import Inspector from "./inspector"
 import TextField from "@material-ui/core/TextField"
 import empty from "is-empty"
 import System from "../lib/music/system"
+import Clef from "../lib/music/clef"
 import Duration from "../lib/music/duration"
 import Verticality from "../lib/music/verticality"
 import Staff from "../lib/music/staff"
@@ -11,7 +12,9 @@ import Voice, { melody } from "../lib/music/voice"
 import Note from "../lib/music/note.js"
 import Rest from "../lib/music/rest"
 import TimeSignature from "../lib/music/time-signature"
+import { dragging, setDragging } from "../pages/compose"
 
+const debug = false
 let toLog = []
 let logging = ""
 const c = (...args) => {
@@ -41,7 +44,7 @@ const applyFnToElemAndChildren = (fn, elem) => {
 }
 
 // a map of vexflow-generated DOMIds to references to their respective music elements
-// this is not in the component because we can't let it get out of sync, eg. by using setState
+// this is not in the component because we can't let it get out of sync, eg. by using async setState
 let DOMIdsToVexflows = {}
 
 const e = new Duration(1, 2)
@@ -171,7 +174,9 @@ const convertSavedMusicFromJSON = json => {
       saved.push(
         new TimeSignature(ent.numerator, ent.denominator).at(ent.position)
       )
-    else if (ent.type === "voice")
+    else if (ent.type === "clef") {
+      saved.push(new Clef(ent.clefType).at(ent.position))
+    } else if (ent.type === "voice")
       saved.push(
         new Voice(
           ent.temporals.map(temp => {
@@ -217,19 +222,23 @@ export const InfiniteVexflow = ({
   const [music, setMusic] = useState(
     save.music
       ? convertSavedMusicFromJSON(save.music)
-      : new System([new Staff([new TimeSignature(4, 4).at(0)])])
+      : new System([
+          new Staff([new TimeSignature(4, 4).at(0), new Clef("treble").at(0)]),
+        ])
   )
   const [showCommandField, setShowCommandField] = useState(false)
+  const [isHovering, setIsHovering] = useState(false)
   const [commandKeys, setCommandKeys] = useState([])
   const [vexflowRenderTicker, setVexflowRenderTicker] = useState(false)
   const triggerRender = () => setVexflowRenderTicker(t => !t)
   const [CURRENT, SETCURRENT] = useState(null)
+  const [selection, setSelection] = useState([])
   const [currentVoice, setCurrentVoice] = useState(
     save.music ? music.staves[0].voices[0] : null
   )
   const [preCurrent, setPreCurrent] = useState(true)
   const [octave, setOctave] = useState(4)
-  const [noNotes, setNoNotes] = useState(save.music ? false : true)
+  const [noNotes, setNoNotes] = useState(!save.music)
   // NB this is an index into durationKeysToDurations;
   const [editorDuration, setEditorDuration] = useState("4")
   const [MIDIInputs, setMIDIInputs] = useState(null)
@@ -334,15 +343,26 @@ export const InfiniteVexflow = ({
     //getCurrent().canonical.makeCurrent = true
   }
 
-  const moveCurrentRight = () => {
+  const expandSelectionRight = () => {
     if (preCurrent) {
-      // move current to first note of first voice
-      currentVoice.temporals[0].makeCurrent = true
-      setPreCurrent(false)
-      triggerRender()
+      moveCurrentRight()
+      return
     }
     if (!getCurrent()) return
     if (!getCurrent().next) return
+    setSelection(sel => [...sel, getCurrent().next.DOMId])
+    SETCURRENT(getCurrent().next.DOMId)
+  }
+
+  const moveCurrentRight = () => {
+    if (preCurrent) {
+      // move current to first note of first voice
+      SETCURRENT(currentVoice.temporals[0].DOMId)
+      setPreCurrent(false)
+    }
+    if (!getCurrent()) return
+    if (!getCurrent().next) return
+    setSelection([])
     SETCURRENT(getCurrent().next.DOMId)
   }
 
@@ -355,6 +375,7 @@ export const InfiniteVexflow = ({
     } else {
       SETCURRENT(getCurrent().prev.DOMId)
     }
+    setSelection([])
   }
 
   const pianoRoll = (e, midiNoteNumber) => {
@@ -576,12 +597,41 @@ export const InfiniteVexflow = ({
     triggerRender()
   }
 
+  const replaceCurrent = key => {
+    if (!getCurrent()) return
+    console.log("asdf")
+    console.log(key)
+    console.log(pianoRollKeysToNotes[key])
+    let { letter, accidental, octaveAdjust } = pianoRollKeysToNotes[key]
+    let replacement = new Note(
+      letter,
+      accidental ? accidental : "",
+      octave + (octaveAdjust ? octaveAdjust : 0)
+    )
+    console.log(replacement)
+    let cur = getCurrent()
+    if (cur instanceof Verticality) {
+      if (cur.canonical === cur) {
+        cur.notes = [replacement]
+      }
+    }
+    preserveCurrent()
+    triggerRender()
+  }
+
   const duplicateCurrent = () => {
     if (!getCurrent()) return
     let cur = getCurrent()
     let copy = cur.copy()
     copy.makeCurrent = true
     cur.canonical.insertAfter(copy)
+    triggerRender()
+  }
+
+  const transposeCurrent = steps => {
+    if (!getCurrent()) return
+    getCurrent().transposeByHalfSteps(steps)
+    preserveCurrent()
     triggerRender()
   }
 
@@ -732,16 +782,21 @@ export const InfiniteVexflow = ({
 
   const createVoicingOnCurrent = voicingStr => {
     if (!getCurrent()) return
-    if (
-      !(getCurrent() instanceof Verticality) ||
-      getCurrent().notes.length !== 1
-    )
-      return
-    let notes = [0, ...voicingStr.split("").map(s => parseInt(s, 10))].map(
-      num => new Note(num + getCurrent().notes[0].midiNoteNumber)
+    if (!(getCurrent() instanceof Verticality)) return
+    let notes = [
+      ...voicingStr.split("").map(s => {
+        if (s === "t") return 10
+        if (s === "e") return 11
+        return parseInt(s, 10)
+      }),
+    ].map(
+      num =>
+        new Note(
+          num + getCurrent().notes[getCurrent().notes.length - 1].midiNoteNumber
+        )
     )
     console.log(notes)
-    getCurrent().notes = notes
+    getCurrent().notes = [...getCurrent().notes, ...notes]
     preserveCurrent()
     triggerRender()
 
@@ -792,6 +847,34 @@ export const InfiniteVexflow = ({
     triggerRender()
   }
 
+  const addForcedNatural = () => {
+    if (!getCurrent() || !(getCurrent() instanceof Verticality)) return
+    if (getCurrent().notes.length > 1) return
+    if (getCurrent().notes[0].accidental === "n")
+      getCurrent().notes[0].accidental = ""
+    else if (getCurrent().notes[0].accidental === "")
+      getCurrent().notes[0].accidental = "n"
+    preserveCurrent()
+    triggerRender()
+  }
+
+  const switchCurrentVoice = () => {
+    if (!getCurrent() || music.staves[0].voices.length === 1) return
+    let voices = music.staves[0].voices
+    let me = 0
+    for (let i = 0; i < voices.length; i++) {
+      if (voices[i] === me) {
+        me = i
+      }
+    }
+    let idx = me + 1
+    idx = idx % (voices.length - 1)
+    let currentPos = getCurrent().pos
+    let currentStartsAt = getCurrent().startsAt
+    let switched = voices[idx]
+    for (let i = 0; i < switched.temporals.length; i++) {}
+  }
+
   const backspace = () => {
     if (!getCurrent()) return
     try {
@@ -813,6 +896,35 @@ export const InfiniteVexflow = ({
         throw err
       }
     }
+    triggerRender()
+  }
+
+  const addClef = type => {
+    // adds a clef to the current measure.
+    // TODO:  for now, only can add a clef to the beginning of a measure
+    // replaces clef if there already is one.
+    if (!noNotes && !getCurrent()) return
+
+    let clefs = music.staves[0].clefs
+    let clefMap = {}
+    clefs.forEach(
+      clef => (clefMap[clef.position] = { type: clef.type, owner: clef })
+    )
+    if (!clefMap[getCurrent().position])
+      music.staves[0].add(new Clef(type).at(getCurrent().position))
+    else clefMap[getCurrent().position].owner.type = type
+    preserveCurrent()
+    triggerRender()
+  }
+
+  const deleteClef = () => {
+    if (!getCurrent()) return
+    let clefs = music.staves[0].clefs
+    for (let clef of clefs) {
+      console.log("clef", clef)
+      if (clef.position === getCurrent().position) music.staves[0].remove(clef)
+    }
+    preserveCurrent()
     triggerRender()
   }
 
@@ -847,13 +959,15 @@ export const InfiniteVexflow = ({
         let command = commandFieldCommands[key]
         if (command.keys.every((regex, idx) => commandKeys[idx].match(regex))) {
           let arg = commandKeys.join("").substr(command.keys.length)
-          command.fn(arg)
+          if (arg.match(command.argRegex)) {
+            command.fn(arg)
+            setLastCommand({
+              name: key,
+              arg,
+            })
+          }
           setCommandKeys([])
           setShowCommandField(false)
-          setLastCommand({
-            name: key,
-            arg,
-          })
         }
       }
     }
@@ -919,14 +1033,16 @@ export const InfiniteVexflow = ({
     },
     "move current right": {
       key: /^(L|ArrowRight|o)$/,
-      fn: () => {
-        moveCurrentRight()
+      fn: e => {
+        if (e.shiftKey) expandSelectionRight()
+        else moveCurrentRight()
       },
     },
     "move current left": {
       key: /^(H|ArrowLeft|i)$/,
       fn: () => {
-        moveCurrentLeft()
+        if (e.shiftKey) expandSelectionLeft()
+        else moveCurrentLeft()
       },
     },
     "go to end of measure": {
@@ -945,12 +1061,20 @@ export const InfiniteVexflow = ({
       key: /^0$/,
       fn: () => moveCurrentToBeginningOfVoice(),
     },
+    "transpose current up a step": {
+      key: /^ArrowUp$/,
+      fn: () => transposeCurrent(1),
+    },
+    "transpose current down a step": {
+      key: /^ArrowDown$/,
+      fn: () => transposeCurrent(-1),
+    },
     "augment current": {
-      key: /^(=|\+|ArrowUp)$/,
+      key: /^(=|\+)$/,
       fn: () => augmentCurrent(),
     },
     "diminute current": {
-      key: /^(-|ArrowDown)$/,
+      key: /^(-)$/,
       fn: () => diminuteCurrent(),
     },
     "set duration": {
@@ -1024,7 +1148,6 @@ export const InfiniteVexflow = ({
 
   useEffect(() => {
     context.setNoteMode(true)
-    setNoNotes(true)
   }, [])
 
   const repeatAllInCurrentVoice = () => {
@@ -1044,7 +1167,7 @@ export const InfiniteVexflow = ({
       fn: () => loadFromCanvasState(),
     },
     ["repeat all in voice"]: {
-      keys: [/r/, /a/],
+      keys: [/r/, /p/, /t/, /a/],
       fn: () => repeatAllInCurrentVoice(),
     },
     ["invert up"]: {
@@ -1054,6 +1177,10 @@ export const InfiniteVexflow = ({
     ["invert down"]: {
       keys: [/i/, /d/],
       fn: () => invertCurrentDown(),
+    },
+    ["natural"]: {
+      keys: [/n/],
+      fn: () => addForcedNatural(),
     },
     ["octave up"]: {
       keys: [/o/, /u/],
@@ -1074,7 +1201,32 @@ export const InfiniteVexflow = ({
     ["add voicing to note"]: {
       keys: [/v/],
       fn: voicing => createVoicingOnCurrent(voicing),
+      argRegex: /^[123456789te]+$/,
       needsSubmit: true,
+    },
+    ["replace current verticality with rest"]: {
+      keys: [/r/, /r/],
+      fn: () => replaceCurrentWithRest(),
+    },
+    ["replace current verticality with note at key"]: {
+      keys: [/r/, pianoRollRegex],
+      fn: pianoRollKey => replaceCurrent(pianoRollKey),
+    },
+    ["change to treble clef"]: {
+      keys: [/c/, /t/],
+      fn: () => addClef("treble"),
+    },
+    ["change to bass clef"]: {
+      keys: [/c/, /b/],
+      fn: () => addClef("bass"),
+    },
+    ["delete clef"]: {
+      keys: [/c/, /d/],
+      fn: () => deleteClef(),
+    },
+    ["switch to other voice"]: {
+      keys: [/s/, /v/],
+      fn: () => switchCurrentVoice(),
     },
   }
 
@@ -1161,6 +1313,7 @@ export const InfiniteVexflow = ({
     }
     DOMIdsToVexflows[id][tickable.attrs.id].selected = true
     SETCURRENT(tickable.attrs.id)
+    setPreCurrent(false)
   }
 
   const injectEventListeners = tickable => {
@@ -1169,13 +1322,42 @@ export const InfiniteVexflow = ({
       onTemporalClick(tickable),
       false
     )
+    console.log("tickable el", tickable.attrs.el)
+    let c = 0
+    for (let staveNote of tickable.attrs.el.children) {
+      for (let note of staveNote.children) {
+        console.log("note", note)
+        if (note.getAttribute("class") === "vf-notehead") {
+          let a = c
+          note.addEventListener(
+            "click",
+            () => {
+              //note.children[0].style.fill = "maroon"
+              console.log(
+                `note ${a} of `,
+                tickable,
+                `id ${tickable.attrs.id}`,
+                `note ${tickable.keys[a]}`,
+                `DOMIDSTO`,
+                DOMIdsToVexflows[id][tickable.attrs.id]
+              )
+              DOMIdsToVexflows[id][tickable.attrs.id].selected = true
+              SETCURRENT(tickable.attrs.id)
+              setPreCurrent(false)
+            },
+            true
+          )
+          c++
+        }
+      }
+    }
   }
 
   const renderVexflow = () => {
     /** vexflow's taxonomy is poorly named btw.
      * a stave, for vexflow, is essentially a measure.
      * a staveNote may be a rest, a single note, or a chord.
-     * staveNotes map to our Verticalities.
+     * our Verticalities biject to vexflow's staveNotes.
      */
     log("renderVexflow")
     try {
@@ -1183,7 +1365,7 @@ export const InfiniteVexflow = ({
       const VF = require("vexflow").Flow
       const div = document.getElementById(`vex-${id}`)
       const renderer = new VF.Renderer(div, VF.Renderer.Backends.SVG)
-      renderer.resize(2000, 170)
+      renderer.resize(500, 170)
       const ctx = renderer.getContext()
       let measureWidth = 300
       // when there are more notes than this in a measure,
@@ -1193,25 +1375,40 @@ export const InfiniteVexflow = ({
       // local current
       let currentSetThisRender
       // id of 'filler' rest at end of stave.
-      // we make it grey at the end.
       let fillerId
 
       // vexflow ids get regenerated on every render.
       DOMIdsToVexflows[id] = {}
       // convert our music representation to vexflow's
       const measures = music.staves[0].measures
-      console.log(measures)
+      console.log("measures", measures)
       let ties = []
-
+      let timeSignatures = music.staves[0].timeSignatures
+      console.log("time sigs", timeSignatures)
+      let clefs = music.staves[0].clefs
+      console.log("clefs", clefs)
+      let clefMap = {}
+      let staveNoteClefMap = {}
+      clefs.forEach(clef => (clefMap[clef.position] = clef.type))
+      let lastclef = null
+      for (let i = 0; i < measures.length; i++) {
+        if (!clefMap[i]) staveNoteClefMap[i] = lastclef
+        else {
+          staveNoteClefMap[i] = clefMap[i]
+          lastclef = clefMap[i]
+        }
+      }
+      console.log("clefmap", clefMap)
+      console.log("stavenoteclefmap", staveNoteClefMap)
       if (measures.length === 0) {
         // empty. render an empty stave
-        let stave = new VF.Stave(10, 0, measureWidth, {
+        let stave = new VF.Stave(10, 40, measureWidth, {
           left_bar: false,
           right_bar: false,
-        })
-          .setContext(ctx)
-          //.setMeasure(1)
-          .draw()
+        }).setContext(ctx)
+        //.setMeasure(1)
+        if (clefMap[0]) stave.addClef(clefMap[0])
+        stave.draw()
       }
       // render those bbs
       else
@@ -1231,7 +1428,7 @@ export const InfiniteVexflow = ({
               .addTickables(
                 voice.temporals.map((temp, tempIdx) => {
                   let staveNote = new VF.StaveNote({
-                    clef: "treble",
+                    clef: staveNoteClefMap[temp.position],
                     auto_stem: voices.length === 1,
                     ...temp.vexflowRepresentation,
                   }).setStemDirection(
@@ -1313,17 +1510,12 @@ export const InfiniteVexflow = ({
               )
           )
           console.log(voices)
-          let stave = new VF.Stave(10 + i * measureWidth, 0, measureWidth, {
+          let stave = new VF.Stave(10 + i * measureWidth, 40, measureWidth, {
             left_bar: i > 0,
             right_bar: i < measures.length - 1,
           }).setContext(ctx)
           //.setMeasure(i + 1)
-          /*
-          if (i === 0)
-            stave
-              .addClef("treble")
-              .addTimeSignature(measure.timeSignature.vexflowRepresentation)
-          */
+          if (clefMap[i]) stave.addClef(clefMap[i])
 
           stave.draw()
           let formatter = new VF.Formatter()
@@ -1334,7 +1526,9 @@ export const InfiniteVexflow = ({
               beam_middle_only: true,
             })
           )
-          formatter.joinVoices(voices).formatToStave(voices, stave)
+          formatter
+            .joinVoices(voices)
+            .formatToStave(voices, stave, { align_rests: true })
           voices.forEach(voice => {
             voice
               .setStave(stave)
@@ -1376,6 +1570,8 @@ export const InfiniteVexflow = ({
             grayOut.setAttribute("fill", "grey")
           }
         }
+      renderer.resize(300 * (measures.length ? measures.length : 0.1) + 20, 220)
+
       // flush current to reset current visual
       if (!currentSetThisRender) SETCURRENT(null)
     } catch (err) {
@@ -1434,6 +1630,21 @@ export const InfiniteVexflow = ({
 
       {(getCurrent() || noNotes || preCurrent) &&
       context.noteMode &&
+      id === context.lastInteractedElemId ? (
+        <Cursor
+          selection={selection.length > 0 ? selection : [CURRENT]}
+          context={context}
+          currentVoice={currentVoice}
+          viewportY={viewportY}
+          viewportX={viewportX}
+          empty={noNotes}
+          preCurrent={preCurrent}
+        />
+      ) : null}
+
+      {/* OLD INDICATOR CODE
+      {(getCurrent() || noNotes || preCurrent) &&
+      context.noteMode &&
       id === context.lastInteractedElemId
         ? (() => {
             let top, height, left
@@ -1475,41 +1686,50 @@ export const InfiniteVexflow = ({
             )
           })()
         : null}
+              */}
 
+      {debug ? (
+        <div
+          className="noselect"
+          style={{
+            position: "fixed",
+            bottom: 20,
+            right: 100,
+            fontSize: 10,
+          }}
+        >
+          {`preCurrent: ${preCurrent}`}
+          <br />
+          {`current: ${CURRENT}`}
+          <br />
+          {`nonotes: ${noNotes}`}
+          <br />
+          {`selection: ${selection}`}
+          <br />
+          {getCurrent() ? (
+            <>
+              {`is canonical: ${getCurrent().canonical === getCurrent()}`}
+              <br />
+              {`next: ${getCurrent().next}`}
+              <br />
+              {`prev: ${getCurrent().prev}`}
+              <br />
+              {`owner: ${getCurrent().owner}`}
+              <br />
+            </>
+          ) : null}
+        </div>
+      ) : null}
       <div
-        className="noselect"
         style={{
           position: "fixed",
-          bottom: 20,
-          right: 100,
-          fontSize: 10,
-        }}
-      >
-        {`preCurrent: ${preCurrent}`}
-        <br />
-        {`current: ${CURRENT}`}
-        <br />
-        {getCurrent() ? (
-          <>
-            {`is canonical: ${getCurrent().canonical === getCurrent()}`}
-            <br />
-            {`next: ${getCurrent().next}`}
-            <br />
-            {`prev: ${getCurrent().prev}`}
-            <br />
-            {`owner: ${getCurrent().owner}`}
-            <br />
-          </>
-        ) : null}
-      </div>
-      <div
-        style={{
-          position: "fixed",
-          top: viewportY - 100 - (selected ? 1 : 0),
-          left: viewportX - 200 - (selected ? 1 : 0),
+          top: viewportY,
+          left: viewportX,
           transform: `scale(${context.zoom.scale / (1 / options.scale)})`,
-          border: `${selected ? `1px solid white` : ``}`,
+          transformOrigin: "top left",
         }}
+        onMouseEnter={e => setIsHovering(true)}
+        onMouseLeave={e => setIsHovering(false)}
         onClick={e => {
           if (!context.zoomMode) {
             e.stopPropagation()
@@ -1527,14 +1747,34 @@ export const InfiniteVexflow = ({
         }}
         id={`infiniteVex-${id}`}
       >
-        {selected ? (
+        <span
+          className="noselect"
+          style={{
+            position: "absolute",
+            left: -10,
+            top: 50,
+            fontSize: 8,
+            fontFamily: "sans-serif",
+            zIndex: 99,
+            cursor: "all-scroll",
+          }}
+          onMouseDown={e => {
+            setDragging({ id, x: e.pageX, y: e.pageY })
+          }}
+        >
+          m
+        </span>
+
+        {(isHovering && empty(dragging)) || dragging.id === id ? (
           <>
             <span
+              className="noselect"
               style={{
                 position: "absolute",
                 right: 1,
                 top: -7,
                 fontFamily: "sans-serif",
+                fontSize: 8,
                 cursor: "pointer",
               }}
               onClick={e => {
@@ -1559,6 +1799,65 @@ export const InfiniteVexflow = ({
           </VexPlaybackButton>
         ) : null}
       </div>
+    </>
+  )
+}
+
+// cursor(s) to indicate current selection or position
+const Cursor = ({
+  selection,
+  viewportX,
+  viewportY,
+  empty,
+  preCurrent,
+  currentVoice,
+  context,
+}) => {
+  let positions = []
+  let scale = context.zoom.scale
+  if (empty || (preCurrent && !currentVoice)) {
+    let top = viewportY
+    let height = 30
+    let left = viewportX
+    positions = [{ top, height, left }]
+  } else if (preCurrent) {
+    if (!document.getElementById(`vf-${currentVoice.temporals[0].DOMId}`))
+      return <></>
+    let elem = document.getElementById(`vf-${currentVoice.temporals[0].DOMId}`)
+    let bbox = elem.getBoundingClientRect()
+    let height = bbox.height
+    let top = bbox.y
+    let left = viewportX
+    positions = [{ top, height, left }]
+  } else if (selection.length > 0) {
+    positions = selection.map(sel => {
+      if (!document.getElementById(`vf-${sel}`)) return <></>
+      let elem = document.getElementById(`vf-${sel}`)
+      let bbox = elem.getBoundingClientRect()
+      let scale = context.zoom.scale
+      let top = bbox.y - 12
+      let height = bbox.height + 24
+      let left = bbox.width + bbox.x + 5 * scale
+      return { top, height, left }
+    })
+  }
+  return (
+    <>
+      {positions.map(({ top, height, left }, idx) => (
+        <div
+          id={`indicator-${idx}`}
+          key={idx}
+          style={{
+            position: "fixed",
+            top,
+            height,
+            left,
+            width: Math.ceil(2 * scale),
+            color: "maroon",
+            backgroundColor: "maroon",
+          }}
+        />
+      ))}
     </>
   )
 }

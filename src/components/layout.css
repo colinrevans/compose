@@ -8,6 +8,29 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
+.katex {
+  font-size: 1em;
+}
+
+@media screen and (min-width: 700px) {
+  .pagediv {
+    margin-left: 22vw;
+    margin-right: 20vw;
+  }
+}
+
+@media screen and (max-width: 700px) {
+  .pagediv {
+    margin-left: 5vw;
+    margin-right: 5vw;
+  }
+  .nomobile {
+    display: none;
+  }
+}
+
+
+
 article,
 aside,
 details,
@@ -42,15 +65,29 @@ template {
 a {
   background-color: transparent;
   -webkit-text-decoration-skip: objects;
+  color: #003344;
 }
 a:active,
 a:hover {
+  color: #999999;
+  transition: 0.5s;
   outline-width: 0;
 }
 abbr[title] {
   border-bottom: none;
   text-decoration: underline;
   text-decoration: underline dotted;
+}
+.underline-hover:hover {
+  transition: 0.5s;
+  border-bottom: 1px solid black;
+}
+.grey-hover {
+  color: black;
+}
+.grey-hover:hover {
+  color: #999999;
+  transition: 0.5s;
 }
 b,
 strong {
@@ -187,7 +224,7 @@ textarea {
 html {
   font: 112.5%/1.45em georgia, serif;
   box-sizing: border-box;
-  overflow-y: hidden;
+  overflow-y: scroll;
 }
 * {
   box-sizing: inherit;
@@ -206,6 +243,15 @@ html {
                 -ms-user-select: none;
                 user-select: none;
               }
+             .select {
+               -webkit-touch-callout: initial;
+               -webkit-user-select: initial;
+               -khtml-user-select: initial;
+               -moz-user-select: initial;
+               -ms-user-select: initial;
+               user-select: initial;
+             }
+
              svg text {
                -webkit-touch-callout: none;
                -webkit-user-select: none;

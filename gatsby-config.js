@@ -13,6 +13,7 @@ module.exports = {
         extensions: [".mdx", ".md"],
         defaultLayouts: {
           default: require.resolve("./src/components/mdx-page-layout.js"),
+          blog: require.resolve("./src/components/blog-page-layout.js"),
         },
       },
     },
@@ -21,6 +22,13 @@ module.exports = {
       options: {
         name: `images`,
         path: `${__dirname}/src/images`,
+      },
+    },
+    {
+      resolve: `gatsby-source-filesystem`,
+      options: {
+        name: `blog`,
+        path: `${__dirname}/src/pages/blog`,
       },
     },
     `gatsby-transformer-sharp`,

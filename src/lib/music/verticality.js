@@ -290,6 +290,11 @@ class Verticality {
     ).addLinks(this.prev, this.next)
   }
 
+  transposeByHalfSteps(steps) {
+    this.notes = this.notes.map(n => n.transposeByHalfSteps(steps))
+    return this
+  }
+
   toString() {
     // c4 e4 g4 --> "[C4 E4 G4] : 1/1"
     return `[${this.notes

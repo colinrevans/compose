@@ -4,6 +4,7 @@ import Rest from "./rest"
 import Rational from "./rational"
 import Duration from "./duration"
 import Verticality from "./verticality"
+import Clef from './clef'
 import TimeSignature from "./time-signature"
 import empty from "is-empty"
 
@@ -34,8 +35,199 @@ export class LineBreak {
   }
 }
 
-// staff uses instanceof on these to make sure an object is valid
-const permissibleObjects = [Voice, TimeSignature, LineBreak]
+// staff uses instanceof on these to make sure everything
+// in a staff is valid
+const permissibleObjects = [Voice, TimeSignature, LineBreak, Clef]
+
+// Collide
+//
+// takes a list of two voices,
+// both of which last a measure,
+// and whose temporals
+// are marked w/ startsAt and endsAt (as by
+// Staff's splitVoice and splitVoices methods).
+// used by Staff's splitVoices method
+// to check whether two voices, split
+// into their respective measures,
+// 'cross'.
+//
+// two voices,
+// the one
+//   do re mi
+// the other
+//   mi re do
+// cross at the first and third notes, respectively.
+const reconcile = voices => {
+  if (voices.length > 2)
+    throw new Error("collide hasn't been implemented for more than two voices.")
+
+  // find a 'bounding box', ie a self contained
+  // group of notes, from both voices, such that
+  // the last note in voice A ends before or when the next
+  // note in group B starts, and vice versa.
+
+  // voice A : whole note
+  // voice B : four quarters
+  // --> one bounding box, a measure long
+
+  // voice A : four quarters
+  // voice B : four quarters
+  // --> four bounding boxes, each a quarter note long.
+
+  // voice A : eight eighths
+  // voice B : four quarters
+  // --> four bounding boxes, each a quarter note long.
+
+  // voice A : two half notes
+  // voice B : three half note triplets
+  // --> one bounding box, a measure long
+
+  // if, for each bounding box, the pitches
+  // of one voice are higher than the other's,
+  // there are no collisions.
+  console.log(voices)
+
+  let voiceA = [...voices[0].voice.temporals].filter((temp, idx) => {
+    if (temp instanceof Verticality) {
+      temp.voiceIdx = idx
+      return true
+    }
+    return false
+  })
+  let voiceB = [...voices[1].voice.temporals].filter((temp, idx) => {
+    if (temp instanceof Verticality) {
+      temp.voiceIdx = idx
+      return true
+    }
+    return false
+  })
+  console.log("voiceA: ", voiceA)
+  console.log("voiceB: ", voiceB)
+  let Aidx = 0
+  let Bidx = 0
+  let c = 0
+
+  const above = (vertA, vertB) =>
+    vertA.notes[0].midiNoteNumber >=
+    vertB.notes[vertB.notes.length - 1].midiNoteNumber
+  const meet = (vertA, vertB) =>
+    vertA.notes[0].midiNoteNumber ===
+    vertB.notes[vertB.notes.length - 1].midiNoteNumber
+  let overallDir = above(voiceA[Aidx], voiceB[Bidx])
+
+  while (voiceA[Aidx] && voiceB[Bidx]) {
+    if (c > 500) throw new Error("probable infinite loop.")
+    // ie, for each bounding box
+    let nextAStart = voiceA[Aidx].startsAt
+    let nextAEnd = voiceA[Aidx].endsAt
+    let nextBStart = voiceB[Bidx].startsAt
+    let nextBEnd = voiceB[Bidx].endsAt
+
+    console.log("starting new bounding box")
+
+    let boundingBeginsWithA = nextAStart <= nextBStart
+    let boundingBeginsWithB = !boundingBeginsWithA
+
+    let boundingDir = above(voiceA[Aidx], voiceB[Bidx])
+
+    // a has a bounding box on its own
+    if (nextAEnd < nextBStart && boundingBeginsWithA) {
+      Aidx++
+      continue
+    }
+    // b has a bounding box on its own
+    if (nextBEnd < nextAStart && boundingBeginsWithB) {
+      Bidx++
+      continue
+    }
+
+    let idxOfLastAInBox = Aidx
+    let idxOfLastBInBox = Bidx
+    let collision = false
+    let inLineWithVoice = true
+
+    let i = idxOfLastAInBox
+    let j = idxOfLastBInBox
+    let a = voiceA
+    let b = voiceB
+    while (a[i] && b[j] && a[i].startsAt < b[j].endsAt) {
+      console.log("current a: ", a[i].toString())
+      console.log("current b: ", b[j].toString())
+      if (above(a[i], b[j]) !== boundingDir) {
+        console.log("inconsistent bounding box !")
+        let collision = true
+      }
+      if (above(a[i], b[j]) !== overallDir) {
+        inLineWithVoice = false
+        console.log("inconsistent dir w/ voice")
+      }
+      while (b[j + 1] && b[j + 1].startsAt < a[i].endsAt) {
+        j++
+        console.log("current b: ", b[j].toString())
+        if (above(a[i], b[j]) !== boundingDir) {
+          console.log("inconsistent bounding box !")
+          collision = true
+        }
+        if (above(a[i], b[j]) !== overallDir) {
+          inLineWithVoice = false
+          console.log("inconsistent dir w/ voice")
+        }
+      }
+      i++
+    }
+    Aidx = i
+    Bidx = j + 1
+    console.log("Aidx now ", Aidx, " and Bidx now ", Bidx)
+
+    /*
+    while (
+      voiceA[idxOfLastAInBox] &&
+      voiceB[idxOfLastBInBox] &&
+      voiceA[idxOfLastAInBox].startsAt < voiceB[idxOfLastBInBox].endsAt
+    ) {
+      console.log("current A: ", voiceA[idxOfLastAInBox].toString())
+      while (
+        voiceB[idxOfLastBInBox] &&
+        voiceB[idxOfLastBInBox].startsAt < voiceA[idxOfLastAInBox].endsAt
+      ) {
+        console.log("current B: ", voiceB[idxOfLastBInBox].toString())
+        if (
+          !meet(voiceA[idxOfLastAInBox], voiceB[idxOfLastBInBox]) &&
+          above(voiceA[idxOfLastAInBox], voiceB[idxOfLastBInBox]) !== dir
+        ) {
+          console.log("collision. ", Aidx, Bidx)
+          if (
+            voiceA[idxOfLastAInBox].startsAt ===
+              voiceB[idxOfLastBInBox].startsAt &&
+            voiceA[idxOfLastAInBox].endsAt === voiceB[idxOfLastBInBox].endsAt
+          ) {
+            voices[0].voice.temporals[voiceA[idxOfLastAInBox].voiceIdx] =
+              voiceB[idxOfLastBInBox]
+            voices[1].voice.temporals[voiceB[idxOfLastBInBox].voiceIdx] =
+              voiceA[idxOfLastAInBox]
+          }
+        }
+        idxOfLastBInBox++
+      }
+      idxOfLastAInBox++
+      if (
+        voiceA[idxOfLastAInBox] &&
+        voiceB[idxOfLastBInBox] &&
+        voiceA[idxOfLastAInBox - 1].endsAt <=
+          voiceB[idxOfLastBInBox].startsAt &&
+        voiceB[idxOfLastBInBox - 1].startsAt <= voiceA[idxOfLastAInBox].endsAt
+      )
+        break
+    }
+
+    Aidx = idxOfLastAInBox
+    Bidx = idxOfLastBInBox
+    */
+    c++
+  }
+
+  return voices
+}
 
 class Staff {
   constructor(entities) {
@@ -67,12 +259,27 @@ class Staff {
     return this._entities
   }
 
+  remove(obj) {
+    if (this.includes(obj)) {
+      let ret = []
+      for (let ent of this.entities) {
+        if (ent !== obj) ret.push(ent)
+      }
+      this.entities = ret
+    }
+    return this
+  }
+
   locate(obj) {
     if (!this.entities.includes(obj)) throw new Error("object not in staff.")
   }
 
   includes(obj) {
     return this.entities.includes(obj)
+  }
+
+  get clefs() {
+    return this.entities.filter(obj => obj instanceof Clef)
   }
 
   get timeSignatures() {
@@ -108,6 +315,18 @@ class Staff {
           ret[i] = { timeSignature: measure.timeSignature, voices: [] }
         ret[i].voices.push({ owner: measure.owner, voice: measure.voice })
       }
+    }
+
+    for (let i = 0; i < ret.length; i++) {
+      let measure = ret[i]
+      if (measure.voices.length <= 1) continue
+
+      //if (!collide(measure.voices)) {
+      //  console.log(`voices in ${measure} don't collide`)
+      //} else console.log(`voices in ${measure} do collide `)
+      //let reconciled = reconcile(measure.voices)
+
+      measure.voices = reconcile(measure.voices)
     }
     return ret
   }
@@ -157,11 +376,13 @@ class Staff {
       if (log) console.log(curPos.plus(durInSig).toString())
       if (curPos.plus(durInSig) <= 1) {
         // this temporal fits inside the current measure.
+        temporal.startsAt = curPos.valueOf()
         curPos = curPos.plus(durInSig)
         if (currentMeasure.length > 0) {
           currentMeasure[currentMeasure.length - 1].next = temporal
           temporal.prev = currentMeasure[currentMeasure.length - 1]
         }
+        temporal.endsAt = curPos.valueOf()
 
         currentMeasure = [...currentMeasure, temporal]
 
@@ -179,6 +400,7 @@ class Staff {
           curPos = new Rational(0, 1)
         }
       } else if (curPos.plus(durInSig) > 1) {
+        let start = curPos.valueOf()
         curPos = curPos.plus(durInSig)
         // we've overshot the barline.
         // split the temporal into two:
@@ -193,6 +415,7 @@ class Staff {
         )
         let curMeasureSig = sig
         let durInCurMeasure = overShotDur.minus(curPos.minus(1, 1))
+        let end = durInCurMeasure.valueOf()
         // we have to convert back to beat-wise duration from measure-wise duration
         if (log) console.log("durincurmeasure: ", durInCurMeasure)
         let preDuration = durInCurMeasure.times(
@@ -243,6 +466,12 @@ class Staff {
         prevTemporal.next = firstTemporal
         firstTemporal.prev = prevTemporal
 
+        firstTemporal.startsAt = start
+        firstTemporal.endsAt = 1
+
+        secondTemporal.startsAt = 0
+        secondTemporal.endsAt = end
+
         if (!temporal.makeFormerCurrent && !temporal.makeLatterCurrent)
           secondTemporal.makeCurrent = temporal.makeCurrent
         else if (temporal.makeFormerCurrent) firstTemporal.makeCurrent = true
@@ -271,6 +500,8 @@ class Staff {
       let restLength = new Duration(sig.numerator).minus(coveredDuration)
       let newRest = new Rest(restLength)
       newRest.prev = currentMeasure[currentMeasure.length - 1]
+      newRest.startsAt = currentMeasure[currentMeasure.length - 1].endsAt
+      newRest.endsAt = 1
       newRest.filler = true
       currentMeasure[currentMeasure.length - 1].next = newRest
       if (log) console.log("leftovers")

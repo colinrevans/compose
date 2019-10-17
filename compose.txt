@@ -1,0 +1,5 @@
+Compose (infinite canvas manager)
+  Elements : [Elem]
+
+
+Elem among [InfiniteVexflow, InfiniteTextArea, InfiniteYoutube]

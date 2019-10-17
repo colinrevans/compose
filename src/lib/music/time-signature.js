@@ -10,6 +10,14 @@ class TimeSignature extends Rational {
     return `${this.numerator}/${this.denominator}`
   }
 
+  get beatValue() {
+    return this.denominator
+  }
+
+  get beatsInBar() {
+    return this.numerator
+  }
+
   toJSON() {
     return {
       type: "time-signature",

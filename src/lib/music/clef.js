@@ -9,6 +9,7 @@ class Clef {
     if (!clefTypes.includes(type)) {
       throw new TypeError("invalid clef type given to Clef constructor")
     }
+    this._type = type
   }
 
   get type() {
@@ -18,6 +19,14 @@ class Clef {
   at(n) {
     this.position = n
     return this
+  }
+
+  toJSON() {
+    return {
+      type: 'clef',
+      clefType: this.type,
+      position: this.position
+    }
   }
 }
 

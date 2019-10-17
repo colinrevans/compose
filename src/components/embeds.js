@@ -4,7 +4,7 @@ const Loader = props => {
   const [loaded, setLoaded] = useState(false)
 
   if (loaded) return props.component
-  else return react.createElement(props.load, { ...props })
+  else return React.createElement(props.load, { ...props })
 }
 
 export const Youtube = props => {

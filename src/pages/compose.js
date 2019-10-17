@@ -19,6 +19,11 @@ import Inspector from "../components/inspector"
 import InfiniteVexflow from "../components/InfiniteVexflow2"
 import "../components/layout.css"
 
+export let dragging = {}
+export const setDragging = x => {
+  dragging = x
+}
+
 //localStorage.clear()
 
 // in public folder
@@ -221,7 +226,7 @@ const Compose = () => {
     },
     "create text field": {
       fn: () => createElement(InfiniteTextArea),
-      keys: [16, 32],
+      keys: [16, 84],
       mode: "canvas",
     },
     "create score": {
@@ -509,6 +514,30 @@ const Compose = () => {
             if (zoomMode === -1) return "zoom-out"
           })(),
         }}
+        onMouseUp={e => {
+          console.log("up. dragging: ", dragging)
+          const shift = (orig, by) => {
+            console.log("shift ", orig, " by ", by)
+            console.log("zoom scale: ", zoom.scale)
+            console.log("got ", orig + by / zoom.scale)
+            return orig + by / zoom.scale
+          }
+          let cp = dragging
+          setElements(es =>
+            es.map(elem => {
+              console.log("elem", elem, "dragging", cp)
+              return elem.id == cp.id
+                ? {
+                    ...elem,
+                    x: shift(elem.x, e.pageX - cp.x),
+                    y: shift(elem.y, e.pageY - cp.y),
+                  }
+                : elem
+            })
+          )
+          e.persist()
+          dragging = {}
+        }}
       >
         <div
           style={{
@@ -745,9 +774,10 @@ const InfiniteVoicingAssistant = props => {
     <iframe
       style={{
         position: "fixed",
-        top: props.y + props.translateY - 150,
+        top: props.y + props.translateY,
         left: props.x + props.translateX,
         transform: `scale(${zoom})`,
+        transformOrigin: "top left",
         minWidth: 500,
         minHeight: 600,
       }}
@@ -835,6 +865,7 @@ const InfinitePDF = ({ context, scale, x, y, id, selected, ...props }) => {
           width: `${options.width}px`,
           height: `${options.height}px`,
           transform: `scale(${context.zoom.scale / scale})`,
+          transformOrigin: "top left",
         }}
       />
     </>
@@ -864,11 +895,12 @@ const InfiniteYoutube = ({ context, scale, x, y, id, selected, ...props }) => {
       <div
         style={{
           position: "fixed",
-          top: viewportY - 120,
-          left: viewportX - 170,
+          top: viewportY,
+          left: viewportX,
           width: 340,
           height: 240,
           transform: `scale(${context.zoom.scale / scale})`,
+          transformOrigin: "top left",
         }}
         onMouseEnter={e => setIsHovering(true)}
         onMouseLeave={e => setIsHovering(false)}
@@ -897,7 +929,15 @@ const InfiniteYoutube = ({ context, scale, x, y, id, selected, ...props }) => {
               }
             }}
           >
-            i
+            <span
+              onClick={e => {
+                deleteElementById(id, context)
+                e.preventDefault()
+                e.stopPropagation()
+              }}
+            >
+              x
+            </span>
           </div>
         ) : null}
         <Youtube
@@ -1014,9 +1054,10 @@ const InfiniteTextArea = ({ context, id, scale, selected, x, y, ...props }) => {
             ...props.style,
             color: options.color,
             position: "fixed",
-            top: options["distraction free"] && selected ? 0 : viewportY - 19,
-            left: options["distraction free"] && selected ? 0 : viewportX - 80,
+            top: options["distraction free"] && selected ? 0 : viewportY,
+            left: options["distraction free"] && selected ? 0 : viewportX,
             transform: `scale(${context.zoom.scale / (1 / options.scale)})`,
+            transformOrigin: "top left",
             backgroundColor: "white",
             height: options["distraction free"] && selected ? "100vh" : "100px",
             width:
@@ -1061,7 +1102,7 @@ const MyTextField = props => {
   }
 
   return (
-    <>
+    <div style={{ position: "relative" }}>
       <style jsx>{`
         p {
           margin-bottom: 0px;
@@ -1111,7 +1152,7 @@ const MyTextField = props => {
             if (props.context.zoomMode === -1) return "zoom-out"
             if (props.context.zoomMode === 0) return "text"
           })(),
-          border: `1px solid ${props.selected ? "grey" : "white"}`,
+          border: `1px solid ${hovering ? "grey" : "white"}`,
           lineHeight: "120%",
           resize: props.resizable ? "both" : "none",
           marginBottom: 0,
@@ -1127,7 +1168,51 @@ const MyTextField = props => {
         onMouseEnter={() => setHovering(true)}
         onMouseLeave={() => setHovering(false)}
       />
-    </>
+      {hovering || props.selected || dragging.id === props.id ? (
+        <div
+          style={{
+            position: "fixed",
+            top: props.style.top,
+            left: props.style.left,
+          }}
+        >
+          <span
+            className="noselect"
+            style={{
+              position: "absolute",
+              left: "-18px",
+              top: -10,
+              cursor: "pointer",
+              fontSize: 8,
+            }}
+            onClick={() => {
+              e => {
+                deleteElementById(props.id, props.context)
+                e.preventDefault()
+                e.stopPropagation()
+              }
+            }}
+          >
+            x
+          </span>
+          <span
+            className="noselect"
+            style={{
+              position: "absolute",
+              left: "-18px",
+              top: 5,
+              fontSize: 8,
+              cursor: "all-scroll",
+            }}
+            onMouseDown={e => {
+              setDragging({ id: props.id, x: e.pageX, y: e.pageY })
+            }}
+          >
+            m
+          </span>
+        </div>
+      ) : null}
+    </div>
   )
 }
 
