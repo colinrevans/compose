@@ -1590,7 +1590,15 @@ export const InfiniteVexflow = ({
       {id === context.lastInteractedElemId && context.noteMode ? (
         <div
           className="noselect"
-          style={{ top: 20, right: 70, position: "fixed", color: "grey" }}
+          style={{
+            top: 20,
+            right: 70,
+            position: "fixed",
+            fontFamily:
+              "-apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen, Ubuntu, Cantarell, Fira Sans, Droid Sans, Helvetica Neue, sans-serif",
+            color: "grey",
+            fontSize: 16,
+          }}
         >
           insert note mode. octave {octave}. dur:{" "}
           {durationKeysToDurations[editorDuration].join("/")}
@@ -1631,50 +1639,50 @@ export const InfiniteVexflow = ({
       ) : null}
 
       {/* OLD INDICATOR CODE
-      {(getCurrent() || noNotes || preCurrent) &&
-      context.noteMode &&
-      id === context.lastInteractedElemId
-        ? (() => {
-            let top, height, left
-            if (getCurrent()) {
-              top = getCurrentOnDOM().getBoundingClientRect().y - 12
-              height = getCurrentOnDOM().getBoundingClientRect().height + 24
-              left =
-                getCurrentOnDOM().getBoundingClientRect().width +
-                getCurrentOnDOM().getBoundingClientRect().x +
-                5
-            } else if (
-              noNotes ||
-              (preCurrent &&
-                (!currentVoice || !currentVoice.temporals[0].DOMId))
-            ) {
-              top = viewportY - 55 - (selected ? 1 : 0)
-              height = 30
-              left = viewportX - 185 - (selected ? 1 : 0)
-            } else if (preCurrent) {
-              let bbox = document
-                .getElementById(`vf-${currentVoice.temporals[0].DOMId}`)
-                .getBoundingClientRect()
-              height = bbox.height
-              top = bbox.y
-              left = viewportX - 185 - (selected ? 1 : 0)
-            }
-            return (
-              <div
-                id="indicator"
-                style={{
-                  position: "fixed",
-                  top,
-                  height,
-                  left,
-                  width: 0,
-                  border: "1px solid maroon",
-                }}
-              />
-            )
+          {(getCurrent() || noNotes || preCurrent) &&
+          context.noteMode &&
+          id === context.lastInteractedElemId
+          ? (() => {
+          let top, height, left
+          if (getCurrent()) {
+          top = getCurrentOnDOM().getBoundingClientRect().y - 12
+          height = getCurrentOnDOM().getBoundingClientRect().height + 24
+          left =
+          getCurrentOnDOM().getBoundingClientRect().width +
+          getCurrentOnDOM().getBoundingClientRect().x +
+          5
+          } else if (
+          noNotes ||
+          (preCurrent &&
+          (!currentVoice || !currentVoice.temporals[0].DOMId))
+          ) {
+          top = viewportY - 55 - (selected ? 1 : 0)
+          height = 30
+          left = viewportX - 185 - (selected ? 1 : 0)
+          } else if (preCurrent) {
+          let bbox = document
+          .getElementById(`vf-${currentVoice.temporals[0].DOMId}`)
+          .getBoundingClientRect()
+          height = bbox.height
+          top = bbox.y
+          left = viewportX - 185 - (selected ? 1 : 0)
+          }
+          return (
+          <div
+          id="indicator"
+          style={{
+          position: "fixed",
+          top,
+          height,
+          left,
+          width: 0,
+          border: "1px solid maroon",
+          }}
+          />
+          )
           })()
-        : null}
-              */}
+          : null}
+        */}
 
       {debug ? (
         <div

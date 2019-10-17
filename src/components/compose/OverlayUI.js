@@ -34,6 +34,7 @@ const OverlayUI = ({
           position: "fixed",
           top: 20,
           left: 20,
+          fontSize: 20,
           color: "lightgrey",
           fontWeight: 300,
           zIndex: 12,
@@ -45,9 +46,10 @@ const OverlayUI = ({
         className="noselect"
         style={{
           position: "fixed",
-          top: 34,
-          left: 200,
+          top: 20,
+          left: 120,
           color: "#ededed",
+          fontSize: 16,
           fontFamily: "sans-serif",
         }}
       >
@@ -61,6 +63,7 @@ const OverlayUI = ({
           left: 20,
           color: "grey",
           zIndex: 14,
+          transform: "scale(0.7)",
         }}
         onClick={() => {
           setElements([])
@@ -74,6 +77,7 @@ const OverlayUI = ({
           bottom: 20,
           left: 120,
           color: "grey",
+          transform: "scale(0.7)",
           zIndex: 14,
         }}
         onClick={() => setTranslate({ x: 0, y: 0 })}
@@ -86,6 +90,7 @@ const OverlayUI = ({
           bottom: 20,
           left: 220,
           color: "grey",
+          transform: "scale(0.7)",
           zIndex: 14,
         }}
         onClick={() => setShowHelp(s => !s)}
@@ -97,6 +102,8 @@ const OverlayUI = ({
           position: "fixed",
           bottom: 20,
           left: 320,
+          transform: "scale(0.7)",
+
           color: "grey",
           zIndex: 14,
         }}
@@ -112,6 +119,7 @@ const OverlayUI = ({
           position: "fixed",
           bottom: 20,
           left: 420,
+          transform: "scale(0.7)",
           color: "grey",
           zIndex: 14,
         }}
@@ -124,6 +132,7 @@ const OverlayUI = ({
         style={{
           position: "fixed",
           bottom: "50vh",
+          transform: "scale(0.7)",
           left: 5,
           color: "grey",
         }}
@@ -135,6 +144,7 @@ const OverlayUI = ({
         style={{
           position: "fixed",
           bottom: "50vh",
+          transform: "scale(0.7)",
           right: 5,
           color: "grey",
         }}
@@ -146,6 +156,7 @@ const OverlayUI = ({
         style={{
           position: "fixed",
           left: "calc(50vw - 32px)",
+          transform: "scale(0.7)",
           top: 5,
           color: "grey",
         }}
@@ -158,6 +169,7 @@ const OverlayUI = ({
           position: "fixed",
           left: "calc(50vw - 32px)",
           bottom: 5,
+          transform: "scale(0.7)",
           color: "grey",
         }}
         onClick={navigateDown}

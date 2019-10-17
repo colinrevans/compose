@@ -57,7 +57,7 @@ const InfiniteTextArea = ({ context, id, scale, selected, x, y, ...save }) => {
         style={{
           position: "fixed",
           fontFamily: "georgia",
-          backgroundColor: "white",
+          backgroundColor: "transparent",
           top: viewportY,
           left: viewportX,
           overflow: "visible",
@@ -77,6 +77,9 @@ const InfiniteTextArea = ({ context, id, scale, selected, x, y, ...save }) => {
             border: `1px solid ${hovering || selected ? "grey" : "white"}`,
             width: bounding.width,
             height: bounding.height,
+            color: options.color,
+            lineHeight: "1.1em",
+            fontSize: 14,
             transform: `scale(${context.zoom.scale / (1 / options.scale)})`,
             transformOrigin: "top left",
             padding: 0,
@@ -97,8 +100,8 @@ const InfiniteTextArea = ({ context, id, scale, selected, x, y, ...save }) => {
             let { width, height } = document
               .getElementById(`textarea-${id}`)
               .getBoundingClientRect()
-            width /= context.zoom.scale
-            height /= context.zoom.scale
+            width /= context.zoom.scale * options.scale
+            height /= context.zoom.scale * options.scale
             setBounding({ width, height })
           }}
           onMouseEnter={() => setHovering(true)}
