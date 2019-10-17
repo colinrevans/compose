@@ -1,18 +1,24 @@
 import React, { useState, useEffect, useCallback } from "react"
-import { VexPlaybackButton } from "./vexflow-components"
+import { VexPlaybackButton } from "../vexflow-components"
 import Inspector from "./inspector"
 import TextField from "@material-ui/core/TextField"
 import empty from "is-empty"
-import System from "../lib/music/system"
-import Clef from "../lib/music/clef"
-import Duration from "../lib/music/duration"
-import Verticality from "../lib/music/verticality"
-import Staff from "../lib/music/staff"
-import Voice, { melody } from "../lib/music/voice"
-import Note from "../lib/music/note.js"
-import Rest from "../lib/music/rest"
-import TimeSignature from "../lib/music/time-signature"
-import { dragging, setDragging } from "../pages/compose"
+import System from "../../lib/music/system"
+import Clef from "../../lib/music/clef"
+import Duration from "../../lib/music/duration"
+import Verticality from "../../lib/music/verticality"
+import Staff from "../../lib/music/staff"
+import Voice, { melody } from "../../lib/music/voice"
+import Note from "../../lib/music/note.js"
+import Rest from "../../lib/music/rest"
+import TimeSignature from "../../lib/music/time-signature"
+import { dragging, setDragging } from "../../pages/compose"
+import {
+  getViewportCoordinates,
+  setElementPropertyById,
+  deleteElementById,
+  selectElementAndDeselectRest,
+} from "../../lib/infinite-util"
 
 const debug = false
 let toLog = []
@@ -159,13 +165,6 @@ const durationKeysToDurations = {
   6: [1, 8],
   7: [1, 16],
 }
-
-import {
-  getViewportCoordinates,
-  setElementPropertyById,
-  deleteElementById,
-  selectElementAndDeselectRest,
-} from "../lib/infinite-util"
 
 const convertSavedMusicFromJSON = json => {
   let saved = []
