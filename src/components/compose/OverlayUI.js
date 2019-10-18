@@ -5,6 +5,7 @@ import Button from "@material-ui/core/Button"
 const OverlayUI = ({
   translate,
   setElements,
+  setZoom,
   setTranslate,
   setShowHelp,
   saveCanvas,
@@ -80,7 +81,10 @@ const OverlayUI = ({
           transform: "scale(0.7)",
           zIndex: 14,
         }}
-        onClick={() => setTranslate({ x: 0, y: 0 })}
+        onClick={() => {
+          setZoom({ scale: 1 })
+          setTranslate({ x: 0, y: 0 })
+        }}
       >
         origin
       </Button>

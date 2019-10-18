@@ -2,12 +2,13 @@ import React, { useState, useCallback, useEffect } from "react"
 import { viewport } from "../../lib/infinite-util"
 import { dragging } from "../../pages/compose.js"
 import {
-  DeleteButton,
-  MoveButton,
+  HoverButtons,
   inspectorForElement,
   selection,
   shouldHide,
 } from "./common"
+
+let mouseDown = false
 
 const InfiniteTextArea = ({ context, id, scale, selected, x, y, ...save }) => {
   if (shouldHide(id, context)) return null
@@ -40,6 +41,7 @@ const InfiniteTextArea = ({ context, id, scale, selected, x, y, ...save }) => {
   const onClick = e => selection(e, id, context, selected)
 
   const onMouseDown = e => {
+    mouseDown = true
     if (e.shiftKey) {
       e.preventDefault()
       document.activeElement.blur()
@@ -47,6 +49,7 @@ const InfiniteTextArea = ({ context, id, scale, selected, x, y, ...save }) => {
   }
 
   const onMouseUp = e => {
+    mouseDown = false
     let { width, height } = document
       .getElementById(`textarea-${id}`)
       .getBoundingClientRect()
@@ -54,6 +57,8 @@ const InfiniteTextArea = ({ context, id, scale, selected, x, y, ...save }) => {
     height /= context.zoom.scale * options.scale
     setBounding({ width, height })
   }
+
+  const scaled = n => n * context.zoom.scale * options.scale
 
   return (
     <>
@@ -66,6 +71,7 @@ const InfiniteTextArea = ({ context, id, scale, selected, x, y, ...save }) => {
           top: viewportY,
           left: viewportX,
           overflow: "visible",
+          zIndex: 1,
         }}
         id={`textarea-container-${id}`}
       >
@@ -79,9 +85,14 @@ const InfiniteTextArea = ({ context, id, scale, selected, x, y, ...save }) => {
             })(),
             resize: options.resizable ? "both" : "none",
             marginBottom: 0,
-            border: `1px solid ${hovering || selected ? "grey" : "white"}`,
+            border: `1px solid ${
+              hovering || selected || mouseDown || dragging.id === id
+                ? "grey"
+                : "transparent"
+            }`,
             width: bounding.width,
             height: bounding.height,
+            backgroundColor: "transparent",
             color: options.color,
             lineHeight: "1.1em",
             fontSize: 14,
@@ -99,20 +110,54 @@ const InfiniteTextArea = ({ context, id, scale, selected, x, y, ...save }) => {
           onMouseLeave={() => setHovering(false)}
         />
       </div>
-      {hovering || selected || dragging.id === id ? (
-        <>
-          <DeleteButton
-            id={id}
-            context={context}
-            style={{ left: viewportX - 18, top: viewportY - 10 }}
-          />
-          <MoveButton
-            id={id}
-            context={context}
-            style={{ left: viewportX - 18, top: viewportY }}
-          />
-        </>
-      ) : null}
+      <HoverButtons
+        id={id}
+        context={context}
+        scaled={scaled}
+        hovering={hovering}
+        setHovering={setHovering}
+        dragging={dragging}
+        mouseDown={mouseDown}
+        viewportX={viewportX}
+        viewportY={viewportY}
+        options={options}
+      />
+      {/*
+      <div
+        style={{
+          position: "fixed",
+          left: viewportX - scaled(12),
+          top: viewportY,
+          width: scaled(12),
+          height: scaled(20),
+        }}
+        onMouseEnter={() => setHovering(true)}
+        onMouseLeave={() => setHovering(false)}
+      >
+        {hovering || selected || dragging.id === id || mouseDown ? (
+          <>
+            <DeleteButton
+              id={id}
+              context={context}
+              style={{
+                left: viewportX - 12 * context.zoom.scale * options.scale,
+                top: viewportY - 0 * context.zoom.scale * options.scale,
+                transform: `scale(${context.zoom.scale * options.scale})`,
+              }}
+            />
+            <MoveButton
+              id={id}
+              context={context}
+              style={{
+                left: viewportX - 12 * context.zoom.scale * options.scale,
+                top: viewportY + 10 * context.zoom.scale * options.scale,
+                transform: `scale(${context.zoom.scale * options.scale})`,
+              }}
+            />
+          </>
+        ) : null}
+      </div>
+      */}
     </>
   )
 }

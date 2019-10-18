@@ -3,13 +3,20 @@ import { equals } from "ramda"
 import { Sampler } from "tone"
 import { setPropertyForAll } from "../lib/infinite-util"
 import Inspector from "../components/compose/inspector"
-import InfiniteVexflow from "../components/compose/InfiniteVexflow2"
+import InfiniteVexflow, {
+  startWheeling,
+  stopWheeling,
+} from "../components/compose/InfiniteVexflow2"
 import InfiniteTextArea from "../components/compose/InfiniteTextArea"
 import HelpMenu from "../components/compose/HelpMenu.js"
 import OverlayUI from "../components/compose/OverlayUI.js"
 import InfiniteYoutube from "../components/compose/InfiniteYoutube"
+import empty from "is-empty"
 import InfinitePDF from "../components/compose/InfinitePDF.js"
 import "../components/layout.css"
+
+let wheelTimeout = null
+let lastWheelTime = null
 
 export let dragging = {}
 export const setDragging = x => {
@@ -32,6 +39,8 @@ const SAMPLER_FILES = {
 let idCount = 0
 
 const ComposeContext = React.createContext({})
+let rawMouseX = null
+let rawMouseY = null
 
 const Compose = () => {
   // this is cumbersome but necessary for Gatsby Build to work.
@@ -60,6 +69,7 @@ const Compose = () => {
   const [zenMode, setZenMode] = useState(false)
   const [noteMode, setNoteMode] = useState(false)
   const [octave, setOctave] = useState(4)
+  const [tick, setTick] = useState(false)
   // toggled every time a component saves.
   // see useEffect below that saves canvas whenever
   // this changes.
@@ -398,6 +408,8 @@ const Compose = () => {
 
   const onMouseMove = useCallback(
     ({ x, y }) => {
+      rawMouseX = x
+      rawMouseY = y
       setMouse({
         x:
           (x - window.innerWidth / 2) / zoom.scale +
@@ -448,117 +460,158 @@ const Compose = () => {
     /* RENDER */
   }
   return (
-    <ComposeContext.Provider
-      value={{
-        zoom,
-        translate,
-        elements,
-        setElements,
-        zoomMode,
-        lastInteractedElemId,
-        setLastInteractedElemId,
-        inspecting,
-        setInspecting,
-        mouse,
-        synth,
-        zenMode,
-        saveElement,
-        saveCanvas,
-        octave,
-        noteMode,
-        setNoteMode,
-      }}
-    >
-      {elements.every(elem => !elem.selected) && inspecting ? (
-        <Inspector />
-      ) : null}
-      <div
-        onWheel={e => {
-          e.preventDefault()
-          //e.stopPropagation()
-          if (e.shiftKey) {
-            let dy = e.deltaY
-            setZoom(z => {
-              return { ...z, scale: z.scale + dy * 0.01 * z.scale }
-            })
-          } else {
-            let dx = e.deltaX / zoom.scale
-            let dy = e.deltaY / zoom.scale
-            setTranslate(translate => ({
-              x: translate.x - dx,
-              y: translate.y - dy,
-            }))
-          }
-        }}
-        onClick={e => {
-          if (zoomMode === 1) zoomIn()
-          if (zoomMode === -1) zoomOut()
-          if (zoomMode !== 0) e.preventDefault()
-          setElements(elements =>
-            elements.map(elem => ({ ...elem, selected: false }))
-          )
-        }}
-        style={{
-          overflowX: "hidden",
-          overflowY: "hidden",
-          cursor: (() => {
-            if (zoomMode === 1) return "zoom-in"
-            if (zoomMode === 0) return "default"
-            if (zoomMode === -1) return "zoom-out"
-          })(),
-        }}
-        onMouseUp={e => {
-          const shift = (orig, by) => {
-            return orig + by / zoom.scale
-          }
-          let cp = dragging
-          setElements(es =>
-            es.map(elem => {
-              return elem.id == cp.id
-                ? {
-                    ...elem,
-                    x: shift(elem.x, e.pageX - cp.x),
-                    y: shift(elem.y, e.pageY - cp.y),
-                  }
-                : elem
-            })
-          )
-          e.persist()
-          dragging = {}
+    <>
+      <ComposeContext.Provider
+        value={{
+          zoom,
+          translate,
+          elements,
+          setElements,
+          zoomMode,
+          lastInteractedElemId,
+          setLastInteractedElemId,
+          inspecting,
+          setInspecting,
+          mouse,
+          synth,
+          zenMode,
+          saveElement,
+          saveCanvas,
+          octave,
+          noteMode,
+          setNoteMode,
         }}
       >
-        <OverlayUI
-          translate={translate}
-          setElements={setElements}
-          setTranslate={setTranslate}
-          setShowHelp={setShowHelp}
-          saveCanvas={saveCanvas}
-          elements={elements}
-          navigateRight={navigateRight}
-          navigateUp={navigateUp}
-          navigateDown={navigateDown}
-          navigateLeft={navigateLeft}
-        />
-
-        {showHelp ? <HelpMenu commands={commands} /> : null}
-
+        {elements.every(elem => !elem.selected) && inspecting ? (
+          <Inspector />
+        ) : null}
         <div
+          onWheel={e => {
+            e.preventDefault()
+            //e.stopPropagation()
+            if (e.shiftKey) {
+              let dy = e.deltaY
+              setZoom(z => {
+                return { ...z, scale: z.scale + dy * 0.01 * z.scale }
+              })
+            } else {
+              let dx = e.deltaX / zoom.scale
+              let dy = e.deltaY / zoom.scale
+              setTranslate(translate => ({
+                x: translate.x - dx,
+                y: translate.y - dy,
+              }))
+            }
+            startWheeling()
+            if (wheelTimeout) clearTimeout(wheelTimeout)
+            wheelTimeout = setTimeout(() => {
+              stopWheeling()
+              wheelTimeout = null
+              // trigger a rerender
+              setTick(m => !m)
+            }, 200)
+          }}
+          onClick={e => {
+            if (zoomMode === 1) zoomIn()
+            if (zoomMode === -1) zoomOut()
+            if (zoomMode !== 0) e.preventDefault()
+            setElements(elements =>
+              elements.map(elem => ({ ...elem, selected: false }))
+            )
+          }}
           style={{
+            overflowX: "hidden",
             overflowY: "hidden",
-            width: "100vw",
-            height: "100vh",
+            cursor: (() => {
+              if (zoomMode === 1) return "zoom-in"
+              if (zoomMode === 0) {
+                if (!empty(dragging)) return "all-scroll"
+
+                return "default"
+              }
+              if (zoomMode === -1) return "zoom-out"
+            })(),
+          }}
+          onMouseUp={e => {
+            const shift = (orig, by) => {
+              return orig + by / zoom.scale
+            }
+            let cp = dragging
+            setElements(es =>
+              es.map(elem => {
+                return elem.id == cp.id
+                  ? {
+                      ...elem,
+                      selected: true,
+                      x: shift(elem.x, e.pageX - cp.x),
+                      y: shift(elem.y, e.pageY - cp.y),
+                    }
+                  : elem
+              })
+            )
+            e.persist()
+            dragging = {}
           }}
         >
-          {elements.map(({ component, ...props }) => (
-            <ComposeContext.Consumer key={`consumer-${props.id}`}>
-              {context =>
-                React.createElement(component, { ...props, context }, null)
-              }
-            </ComposeContext.Consumer>
-          ))}
+          <OverlayUI
+            translate={translate}
+            setElements={setElements}
+            setTranslate={setTranslate}
+            setZoom={setZoom}
+            setShowHelp={setShowHelp}
+            saveCanvas={saveCanvas}
+            elements={elements}
+            navigateRight={navigateRight}
+            navigateUp={navigateUp}
+            navigateDown={navigateDown}
+            navigateLeft={navigateLeft}
+          />
+
+          {showHelp ? <HelpMenu commands={commands} /> : null}
+
+          <div
+            style={{
+              overflowY: "hidden",
+              width: "100vw",
+              height: "100vh",
+            }}
+          >
+            {elements.map(({ component, ...props }) => (
+              <ComposeContext.Consumer key={`consumer-${props.id}`}>
+                {context =>
+                  React.createElement(component, { ...props, context }, null)
+                }
+              </ComposeContext.Consumer>
+            ))}
+          </div>
         </div>
-      </div>
-    </ComposeContext.Provider>
+      </ComposeContext.Provider>
+      {!empty(dragging) ? (
+        <>
+          <svg
+            style={{
+              position: "fixed",
+              width: "100vw",
+              height: "100vh",
+              top: 0,
+              left: 0,
+              zIndex: -2000,
+            }}
+            viewBox={`0 0 ${window.innerWidth} ${window.innerHeight}`}
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <line
+              x1={dragging.x}
+              x2={rawMouseX}
+              y1={dragging.y}
+              y2={rawMouseY}
+              stroke="#999999"
+              style={{ zIndex: 2000 }}
+            />
+          </svg>
+        </>
+      ) : null}
+    </>
   )
 }
 

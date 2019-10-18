@@ -8,7 +8,10 @@ class System {
   set staves(staves) {
     if (!Array.isArray(staves)) staves = [staves]
     if (!staves.every(stave => stave instanceof Staff)) {
-      throw new TypeError("System requires an array of Staff instances.")
+      console.log(staves)
+      throw new TypeError(
+        `System requires an array of Staff instances. got ${staves}`
+      )
     }
     this._staves = staves
   }

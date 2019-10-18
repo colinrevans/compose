@@ -2,6 +2,7 @@ import React, { useState } from "react"
 import { Youtube } from "../embeds"
 import { viewport } from "../../lib/infinite-util.js"
 import { dragging } from "../../pages/compose"
+import { HoverButtons } from "./common"
 import {
   DeleteButton,
   MoveButton,
@@ -16,13 +17,29 @@ const InfiniteYoutube = ({ context, scale, x, y, id, selected, ...props }) => {
 
   const [isHovering, setIsHovering] = useState(false)
   const [loaded, setLoaded] = useState(false)
-  const [options, setOptions] = useState({ src: props.src ? props.src : "" })
+  const [options, setOptions] = useState({
+    scale: 1 / scale,
+    src: props.src ? props.src : "",
+  })
 
   const onClick = e => selection(e, id, context, selected)
 
   return (
     <>
       {inspectorForElement(id, context, selected, options, setOptions)}
+
+      <HoverButtons
+        id={id}
+        context={context}
+        hovering={isHovering}
+        setHovering={setIsHovering}
+        dragging={dragging}
+        viewportX={viewportX}
+        viewportY={viewportY}
+        adjustX={20}
+        adjustY={20}
+        options={options}
+      />
 
       <div
         style={{
@@ -38,32 +55,6 @@ const InfiniteYoutube = ({ context, scale, x, y, id, selected, ...props }) => {
         onMouseLeave={e => setIsHovering(false)}
         onClick={onClick}
       >
-        {isHovering || dragging.id === id ? (
-          <>
-            <DeleteButton
-              id={id}
-              context={context}
-              style={{
-                position: "absolute",
-                width: 10,
-                height: 20,
-                top: 5,
-                right: 5,
-              }}
-            />
-            <MoveButton
-              id={id}
-              context={context}
-              style={{
-                position: "absolute",
-                width: 10,
-                heigth: 20,
-                top: 15,
-                right: 5,
-              }}
-            />
-          </>
-        ) : null}
         <Youtube
           style={{
             position: "fixed",

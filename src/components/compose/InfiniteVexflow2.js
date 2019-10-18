@@ -19,7 +19,7 @@ import { convertSavedMusicFromJSON } from "./InfiniteVexflow2/util"
 import Note from "../../lib/music/note.js"
 import Rest from "../../lib/music/rest"
 import TimeSignature from "../../lib/music/time-signature"
-import { shouldHide } from "./common"
+import { shouldHide, HoverButtons, MoveButton } from "./common"
 import { dragging, setDragging } from "../../pages/compose"
 import {
   setElementPropertyById,
@@ -29,6 +29,17 @@ import {
 } from "../../lib/infinite-util"
 
 const debug = false
+
+// cursors get out of sync with vexflow render timing,
+// so we have this to turn them off during an onwheel event
+export let wheeling = false
+export const startWheeling = () => {
+  wheeling = true
+}
+export const stopWheeling = () => {
+  wheeling = false
+}
+
 let toLog = []
 let logging = ""
 const c = (...args) => {
@@ -64,6 +75,14 @@ let firstMidiNote = null
 let lastKeyEventType = null
 let firstPianoRollKey = null
 
+// only convert saved json once. see music's setState
+let converted = {}
+const convert = (id, json) => {
+  let c = convertSavedMusicFromJSON(json)
+  converted[id] = c
+  return c
+}
+
 export const InfiniteVexflow = ({
   context,
   scale,
@@ -76,8 +95,6 @@ export const InfiniteVexflow = ({
   if (shouldHide(id, context)) return null
   const { viewportX, viewportY } = viewport(x, y, context)
 
-  //************STATE******************************//
-  //***********************************************//
   const [options, setOptions] = useState(
     save.options
       ? save.options
@@ -91,7 +108,7 @@ export const InfiniteVexflow = ({
   const [lastCommand, setLastCommand] = useState("")
   const [music, setMusic] = useState(
     save.music
-      ? convertSavedMusicFromJSON(save.music)
+      ? converted[id] || convert(id, save.music)
       : new System([
           new Staff([new TimeSignature(4, 4).at(0), new Clef("treble").at(0)]),
         ])
@@ -126,12 +143,6 @@ export const InfiniteVexflow = ({
     }
   }
   const getCurrentOnDOM = () => document.getElementById(`vf-${CURRENT}`)
-  const { viewportX, viewportY } = getViewportCoordinates(
-    x,
-    y,
-    context.translate,
-    context.zoom
-  )
 
   useEffect(() => {
     DOMIdsToVexflows[id] = {}
@@ -909,7 +920,7 @@ export const InfiniteVexflow = ({
     },
     "move current left": {
       key: /^(H|ArrowLeft|i)$/,
-      fn: () => {
+      fn: e => {
         if (e.shiftKey) expandSelectionLeft()
         else moveCurrentLeft()
       },
@@ -1432,6 +1443,7 @@ export const InfiniteVexflow = ({
       renderer.resize(300 * (measures.length ? measures.length : 0.1) + 20, 220)
 
       // flush current to reset current visual
+
       if (!currentSetThisRender) SETCURRENT(null)
     } catch (err) {
       console.log("error during rendering: ", err)
@@ -1451,6 +1463,8 @@ export const InfiniteVexflow = ({
       window.removeEventListener("keyup", onKeyUp, true)
     }
   }, [onKeyDown, onKeyUp])
+
+  const scaled = n => n * context.zoom.scale * options.scale
 
   return (
     <>
@@ -1497,7 +1511,8 @@ export const InfiniteVexflow = ({
 
       {(getCurrent() || noNotes || preCurrent) &&
       context.noteMode &&
-      id === context.lastInteractedElemId ? (
+      id === context.lastInteractedElemId &&
+      !wheeling ? (
         <Cursor
           selection={selection.length > 0 ? selection : [CURRENT]}
           context={context}
@@ -1577,9 +1592,13 @@ export const InfiniteVexflow = ({
             <>
               {`is canonical: ${getCurrent().canonical === getCurrent()}`}
               <br />
-              {`next: ${getCurrent().next}`}
+              {`next: ${getCurrent().next} domID: ${
+                getCurrent().next ? getCurrent().next.DOMId : ""
+              }`}
               <br />
-              {`prev: ${getCurrent().prev}`}
+              {`prev: ${getCurrent().prev} domID: ${
+                getCurrent().prev ? getCurrent().prev.DOMId : ""
+              }`}
               <br />
               {`owner: ${getCurrent().owner}`}
               <br />
@@ -1587,6 +1606,20 @@ export const InfiniteVexflow = ({
           ) : null}
         </div>
       ) : null}
+
+      <HoverButtons
+        id={id}
+        context={context}
+        scaled={scaled}
+        hovering={isHovering}
+        setHovering={setIsHovering}
+        dragging={dragging}
+        viewportX={viewportX}
+        viewportY={viewportY}
+        adjustY={55}
+        options={options}
+      />
+
       <div
         style={{
           position: "fixed",
@@ -1614,46 +1647,6 @@ export const InfiniteVexflow = ({
         }}
         id={`infiniteVex-${id}`}
       >
-        <span
-          className="noselect"
-          style={{
-            position: "absolute",
-            left: -10,
-            top: 50,
-            fontSize: 8,
-            fontFamily: "sans-serif",
-            zIndex: 99,
-            cursor: "all-scroll",
-          }}
-          onMouseDown={e => {
-            setDragging({ id, x: e.pageX, y: e.pageY })
-          }}
-        >
-          m
-        </span>
-
-        {(isHovering && empty(dragging)) || dragging.id === id ? (
-          <>
-            <span
-              className="noselect"
-              style={{
-                position: "absolute",
-                right: 1,
-                top: -7,
-                fontFamily: "sans-serif",
-                fontSize: 8,
-                cursor: "pointer",
-              }}
-              onClick={e => {
-                deleteElementById(id, context)
-                e.preventDefault()
-                e.stopPropagation()
-              }}
-            >
-              x
-            </span>
-          </>
-        ) : null}
         <div id={`vex-${id}`} />
         {options.playback ? (
           <VexPlaybackButton

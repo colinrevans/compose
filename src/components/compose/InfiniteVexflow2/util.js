@@ -1,4 +1,4 @@
-import TimeSignature from "../../../lib/music/system"
+import TimeSignature from "../../../lib/music/time-signature"
 import Staff from "../../../lib/music/staff"
 import Voice from "../../../lib/music/voice"
 import Rest from "../../../lib/music/rest"
@@ -20,6 +20,7 @@ export const applyFnToElemAndChildren = (fn, elem) => {
 }
 
 export const convertSavedMusicFromJSON = json => {
+  console.log("CONVERTING: ", json)
   let saved = []
   for (let ent of json.music) {
     if (ent.type === "time-signature")
