@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from "react"
-import { equals } from "ramda"
+import { equals, clone } from "ramda"
 import { Sampler } from "tone"
 import { setPropertyForAll } from "../lib/infinite-util"
 import Inspector from "../components/compose/inspector"
@@ -115,6 +115,30 @@ const Compose = () => {
       "c98"
     )
     setSaveTicker(s => !s, "c112")
+  }
+
+  const duplicateElement = (id, saveState) => {
+    let scale
+    if (saveState.options) {
+      if (saveState.options.scale) scale = 1 / saveState.options.scale
+    }
+    let me = elements.filter(elem => elem.id === id)[0]
+    let newMe = clone(me)
+    console.log(newMe)
+    setElements(
+      elems => [
+        ...elems,
+        {
+          ...newMe,
+          x: newMe.x - 30 * zoom.scale,
+          y: newMe.y - 30 * zoom.scale,
+          id: idCount + 1,
+        },
+      ],
+      "c130"
+    )
+    setSaveTicker(s => !s, "c131")
+    idCount += 2
   }
 
   useEffect(() => {
@@ -509,6 +533,7 @@ const Compose = () => {
           elements,
           setElements,
           zoomMode,
+          duplicateElement,
           lastInteractedElemId,
           setLastInteractedElemId,
           inspecting,
@@ -575,26 +600,28 @@ const Compose = () => {
             })(),
           }}
           onMouseUp={e => {
-            const shift = (orig, by) => {
-              return orig + by / zoom.scale
+            if (!empty(dragging)) {
+              const shift = (orig, by) => {
+                return orig + by / zoom.scale
+              }
+              let cp = dragging
+              setElements(
+                es =>
+                  es.map(elem => {
+                    return elem.id == cp.id
+                      ? {
+                          ...elem,
+                          selected: true,
+                          x: shift(elem.x, e.pageX - cp.x),
+                          y: shift(elem.y, e.pageY - cp.y),
+                        }
+                      : elem
+                  }),
+                "c546"
+              )
+              e.persist()
+              dragging = {}
             }
-            let cp = dragging
-            setElements(
-              es =>
-                es.map(elem => {
-                  return elem.id == cp.id
-                    ? {
-                        ...elem,
-                        selected: true,
-                        x: shift(elem.x, e.pageX - cp.x),
-                        y: shift(elem.y, e.pageY - cp.y),
-                      }
-                    : elem
-                }),
-              "c546"
-            )
-            e.persist()
-            dragging = {}
           }}
         >
           <OverlayUI

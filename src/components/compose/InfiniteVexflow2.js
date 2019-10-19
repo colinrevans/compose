@@ -158,6 +158,16 @@ export const InfiniteVexflow = ({
     context.saveElement(id, { music: saveState, options })
   }, [id, context, music, options])
 
+  const duplicate = useCallback(() => {
+    let entsAsJSON = []
+    for (let ent of music.staves[0].entities) {
+      entsAsJSON.push(ent.toJSON())
+    }
+    let saveState = { music: entsAsJSON }
+    console.log("copying: ", entsAsJSON)
+    context.duplicateElement(id, { music: saveState, options })
+  }, [id, context, music, options])
+
   const loadFromCanvasState = useCallback(() => {
     // TODO load music from JSON string
     setMusic(music =>
@@ -1107,6 +1117,10 @@ export const InfiniteVexflow = ({
       keys: [/i/, /d/],
       fn: () => invertCurrentDown(),
     },
+    ["duplicate"]: {
+      keys: [/c/, /c/],
+      fn: () => duplicate(),
+    },
     ["natural"]: {
       keys: [/n/],
       fn: () => addForcedNatural(),
@@ -1230,10 +1244,6 @@ export const InfiniteVexflow = ({
     tickable => e => {
       let temporal = DOMIdsToVexflows[id][tickable.attrs.id]
       if (!temporal) return
-      console.log(
-        temporal.owner.temporals.map(temp => temp.duration.toString())
-      )
-      console.log(e)
       if (e.shiftKey) {
         if (temporal.canonical.duration < 4)
           temporal.canonical.duration.augment(2)
@@ -1509,12 +1519,20 @@ export const InfiniteVexflow = ({
 
   useEffect(() => {
     // TODO this has no sense for width and height
+    /*
     if (viewportX > window.innerWidth * 1.5) return
     if (viewportY > window.innerHeight * 1.5) return
     if (viewportX < (window.innerWidth / 2) * -1) return
     if (viewportY < (window.innerHeight / 2) * -1) return
+    */
     console.log("*********************************")
-    console.log("RENDER: vexflow component within viewport")
+    console.log("RENDER EFFECT")
+    console.log(
+      "ID ",
+      id,
+      "MUSIC: ",
+      music.staves ? music.staves[0].voices[0].toString() : "none"
+    )
     console.log("********************************")
     removeSVGs()
     renderVexflow()
