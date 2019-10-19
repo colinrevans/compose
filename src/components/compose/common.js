@@ -112,6 +112,7 @@ export const HoverButtons = ({
           top: viewportY - scaled(5) + scaled(adjustY),
           width: scaled(12),
           height: scaled(30),
+          color: "#999999",
           zIndex: 1,
         }}
         onMouseEnter={() => setHovering(true)}
@@ -152,6 +153,35 @@ export const HoverButtons = ({
           </>
         ) : null}
       </div>
+    </>
+  )
+}
+
+export const Crosshair = ({ x, y, scale, adjustX, adjustY }) => {
+  if (adjustX) x += adjustX * scale
+  if (adjustY) y += adjustY * scale
+  return (
+    <>
+      <div
+        style={{
+          width: Math.max(1, 1 * scale),
+          height: Math.max(1, 11 * scale),
+          position: "fixed",
+          top: y,
+          left: x + 5 * scale,
+          backgroundColor: "black",
+        }}
+      />
+      <div
+        style={{
+          width: Math.max(1, 11 * scale),
+          height: Math.max(1, 1 * scale),
+          position: "fixed",
+          top: y + 5 * scale,
+          left: x,
+          backgroundColor: "black",
+        }}
+      />
     </>
   )
 }

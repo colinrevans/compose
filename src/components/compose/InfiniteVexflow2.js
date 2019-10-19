@@ -19,8 +19,8 @@ import { convertSavedMusicFromJSON } from "./InfiniteVexflow2/util"
 import Note from "../../lib/music/note.js"
 import Rest from "../../lib/music/rest"
 import TimeSignature from "../../lib/music/time-signature"
-import { shouldHide, HoverButtons, MoveButton } from "./common"
-import { dragging, setDragging } from "../../pages/compose"
+import { shouldHide, Crosshair, HoverButtons } from "./common"
+import { dragging, wheeling } from "../../pages/compose"
 import {
   setElementPropertyById,
   deleteElementById,
@@ -28,17 +28,7 @@ import {
   viewport,
 } from "../../lib/infinite-util"
 
-const debug = false
-
-// cursors get out of sync with vexflow render timing,
-// so we have this to turn them off during an onwheel event
-export let wheeling = false
-export const startWheeling = () => {
-  wheeling = true
-}
-export const stopWheeling = () => {
-  wheeling = false
-}
+const debug = true
 
 let toLog = []
 let logging = ""
@@ -60,6 +50,9 @@ const unlog = () => (logging = "")
 // a map of vexflow-generated DOMIds to references to their respective music elements
 // this is not in the component because we can't let it get out of sync, eg. by using async setState
 let DOMIdsToVexflows = {}
+
+// need this to rerender vexflow once a wheel event has stopped
+let wheelingLastTime = {}
 
 const last = arr => arr[arr.length - 1]
 
@@ -92,7 +85,6 @@ export const InfiniteVexflow = ({
   selected,
   ...save
 }) => {
-  if (shouldHide(id, context)) return null
   const { viewportX, viewportY } = viewport(x, y, context)
 
   const [options, setOptions] = useState(
@@ -129,11 +121,12 @@ export const InfiniteVexflow = ({
   // NB this is an index into durationKeysToDurations;
   const [editorDuration, setEditorDuration] = useState("4")
   const [MIDIInputs, setMIDIInputs] = useState(null)
-  const getCurrent = () => {
+
+  const getCurrent = useCallback(() => {
     if (DOMIdsToVexflows[id]) return DOMIdsToVexflows[id][CURRENT]
     else return null
-  }
-  const preserveCurrent = () => {
+  }, [id, CURRENT])
+  const preserveCurrent = useCallback(() => {
     if (!getCurrent()) return
     if (getCurrent() === getCurrent().canonical)
       getCurrent().canonical.makeCurrent = true
@@ -141,8 +134,11 @@ export const InfiniteVexflow = ({
       if (getCurrent().tie) getCurrent().cononical.makeFormerCurrent = true
       else getCurrent().canonical.makeLatterCurrent = true
     }
-  }
-  const getCurrentOnDOM = () => document.getElementById(`vf-${CURRENT}`)
+  }, [getCurrent])
+  const getCurrentOnDOM = useCallback(
+    () => document.getElementById(`vf-${CURRENT}`),
+    [CURRENT]
+  )
 
   useEffect(() => {
     DOMIdsToVexflows[id] = {}
@@ -157,7 +153,7 @@ export const InfiniteVexflow = ({
     let saveState = { music: entsAsJSON }
     console.log("saving: ", entsAsJSON)
     context.saveElement(id, { music: saveState, options })
-  }, [music, options])
+  }, [id, context, music, options])
 
   const loadFromCanvasState = useCallback(() => {
     // TODO load music from JSON string
@@ -166,7 +162,7 @@ export const InfiniteVexflow = ({
     )
     if (save.music) triggerRender()
     setOptions(opts => (save.options ? save.options : opts))
-  }, [])
+  }, [save.music, save.options])
 
   const toggleCommandField = useCallback(() => {
     setCommandKeys([])
@@ -176,7 +172,7 @@ export const InfiniteVexflow = ({
   const commandFieldBackspace = useCallback(() => {
     if (commandKeys.length <= 1) toggleCommandField()
     else setCommandKeys(keys => keys.slice(0, keys.length - 1))
-  }, [])
+  }, [commandKeys.length, toggleCommandField])
 
   const addKeyToCommandField = useCallback(
     x => setCommandKeys(keys => [...keys, x]),
@@ -185,46 +181,48 @@ export const InfiniteVexflow = ({
 
   const doLastCommand = useCallback(
     () => commandFieldCommands[lastCommand.name].fn(lastCommand.arg),
-    [lastCommand]
+    [commandFieldCommands, lastCommand]
   )
 
-  const setCurrentToDur = (num, denom) => {
-    if (!getCurrent()) return
-    getCurrent().canonical.duration = new Duration(num, denom)
-    if (getCurrent().filler) {
-      console.log("filler")
+  const setCurrentToDur = useCallback(
+    (num, denom) => {
+      if (!getCurrent()) return
       getCurrent().canonical.duration = new Duration(num, denom)
-      getCurrent().owner.add(getCurrent())
-      getCurrent().filler = false
-      getCurrent().makeCurrent = true
-      triggerRender()
-    } else {
-      console.log("not filler")
-      if (
-        getCurrent().next &&
-        getCurrent().next instanceof Rest &&
-        !getCurrent().next.next
-      ) {
-        console.log("pre filler")
-        preserveCurrent()
-        getCurrent().next = null
+      if (getCurrent().filler) {
+        console.log("filler")
+        getCurrent().canonical.duration = new Duration(num, denom)
+        getCurrent().owner.add(getCurrent())
+        getCurrent().filler = false
+        getCurrent().makeCurrent = true
+        triggerRender()
       } else {
-        console.log("not prefiller")
-        if (getCurrent().next) {
-          console.log("next")
-          getCurrent().next.canonical.makeCurrent = true
-        } else {
-          console.log("no next")
+        console.log("not filler")
+        if (
+          getCurrent().next &&
+          getCurrent().next instanceof Rest &&
+          !getCurrent().next.next
+        ) {
+          console.log("pre filler")
           preserveCurrent()
+          getCurrent().next = null
+        } else {
+          console.log("not prefiller")
+          if (getCurrent().next) {
+            console.log("next")
+            //getCurrent().next.canonical.makeCurrent = true
+            preserveCurrent()
+          } else {
+            console.log("no next")
+            preserveCurrent()
+          }
         }
+        triggerRender()
       }
-      triggerRender()
-    }
+    },
+    [getCurrent, preserveCurrent]
+  )
 
-    //getCurrent().canonical.makeCurrent = true
-  }
-
-  const expandSelectionRight = () => {
+  const expandSelectionRight = useCallback(() => {
     if (preCurrent) {
       moveCurrentRight()
       return
@@ -233,9 +231,9 @@ export const InfiniteVexflow = ({
     if (!getCurrent().next) return
     setSelection(sel => [...sel, getCurrent().next.DOMId])
     SETCURRENT(getCurrent().next.DOMId)
-  }
+  }, [preCurrent, moveCurrentRight, getCurrent])
 
-  const moveCurrentRight = () => {
+  const moveCurrentRight = useCallback(() => {
     if (preCurrent) {
       // move current to first note of first voice
       SETCURRENT(currentVoice.temporals[0].DOMId)
@@ -245,9 +243,9 @@ export const InfiniteVexflow = ({
     if (!getCurrent().next) return
     setSelection([])
     SETCURRENT(getCurrent().next.DOMId)
-  }
+  }, [currentVoice, preCurrent, getCurrent])
 
-  const moveCurrentLeft = () => {
+  const moveCurrentLeft = useCallback(() => {
     if (!getCurrent()) return
     if (!getCurrent().prev) {
       setPreCurrent(true)
@@ -257,153 +255,178 @@ export const InfiniteVexflow = ({
       SETCURRENT(getCurrent().prev.DOMId)
     }
     setSelection([])
-  }
+  }, [getCurrent])
 
-  const pianoRoll = (e, midiNoteNumber) => {
-    console.log("piano roll:", e.key || midiNoteNumber)
-    if (!getCurrent() && !music.staves[0].empty && !preCurrent) return
-    if (e.key !== undefined && e.key === firstPianoRollKey) return
-    if (!firstPianoRollKey && !e.metaKey) firstPianoRollKey = e.key
-    setNoNotes(false)
-    let note = midiNoteNumber
-      ? new Note(midiNoteNumber)
-      : pianoRollKeysToNotes[e.key]
-    if (!(note instanceof Note)) {
-      note = new Note(
-        note.letter,
-        note.accidental ? note.accidental : "",
-        octave + (note.octaveAdjust ? note.octaveAdjust : 0)
-      )
-    }
+  const pianoRoll = useCallback(
+    (e, midiNoteNumber) => {
+      console.log("piano roll:", e.key || midiNoteNumber)
+      if (!getCurrent() && !music.staves[0].empty && !preCurrent) return
+      if (e.key !== undefined && e.key === firstPianoRollKey) return
+      if (!firstPianoRollKey && !e.metaKey) firstPianoRollKey = e.key
+      setNoNotes(false)
+      let note = midiNoteNumber
+        ? new Note(midiNoteNumber)
+        : pianoRollKeysToNotes[e.key]
+      if (!(note instanceof Note)) {
+        note = new Note(
+          note.letter,
+          note.accidental ? note.accidental : "",
+          octave + (note.octaveAdjust ? note.octaveAdjust : 0)
+        )
+      }
+      console.log("curent: ", getCurrent())
+      console.log("preCur: ", preCurrent)
 
-    // if the new note and the current note have the same letter
-    // but different accidentals,
-    // switch the note with the accidental to its enharmonic so we get, eg,
-    // f - gb - f rather than f - f# - f automatically.
-    if (
-      getCurrent() &&
-      getCurrent() instanceof Verticality &&
-      getCurrent().notes[0]
-    ) {
-      let curNote = getCurrent().notes[0]
-
+      // if the new note and the current note have the same letter
+      // but different accidentals,
+      // switch the note with the accidental to its enharmonic so we get, eg,
+      // f - gb - f rather than f - f# - f automatically.
       if (
-        curNote.letter === note.letter &&
-        curNote.accidental !== note.accidental
+        getCurrent() &&
+        getCurrent() instanceof Verticality &&
+        getCurrent().notes[0]
       ) {
-        console.log("hit")
-        if (getCurrent().notes[0].accidental === ``) {
-          note.toEnharmonic()
-        } else if (note.accidental === "") {
-          getCurrent().notes[0].toEnharmonic()
+        let curNote = getCurrent().notes[0]
+
+        if (
+          curNote.letter === note.letter &&
+          curNote.accidental !== note.accidental
+        ) {
+          console.log("hit")
+          if (getCurrent().notes[0].accidental === ``) {
+            note.toEnharmonic()
+          } else if (note.accidental === "") {
+            getCurrent().notes[0].toEnharmonic()
+          }
         }
       }
-    }
 
-    let letter = note.letter
-    let accidental = note.accidental
-    let oct = note.octave ? note.octave : octave
-    let adj = note.octaveAdjust === undefined ? 0 : note.octaveAdjust
-    if (!accidental) accidental = ""
-    console.log(`${letter}${accidental}${oct + adj}`)
-    let noteStr = `${letter}${accidental}${oct + adj}`
-    console.log("notestr: ", noteStr)
-    try {
-      if (getCurrent()) {
-        if (
-          midiNoteNumber
-            ? firstMidiNote === midiNoteNumber
-            : !e.metaKey && firstPianoRollKey === e.key
-        )
-          DOMIdsToVexflows[id][CURRENT].insertAfter(
-            new Verticality(
-              noteStr,
-              new Duration(...durationKeysToDurations[editorDuration])
-            )
+      let letter = note.letter
+      let accidental = note.accidental
+      let oct = note.octave ? note.octave : octave
+      let adj = note.octaveAdjust === undefined ? 0 : note.octaveAdjust
+      if (!accidental) accidental = ""
+      console.log(`${letter}${accidental}${oct + adj}`)
+      let noteStr = `${letter}${accidental}${oct + adj}`
+      console.log("notestr: ", noteStr)
+      try {
+        if (getCurrent()) {
+          if (
+            midiNoteNumber
+              ? firstMidiNote === midiNoteNumber
+              : !e.metaKey && firstPianoRollKey === e.key
           )
-        else getCurrent().addNote(new Note(noteStr))
-      } else if (music.staves[0].empty) {
-        let n = new Verticality(
-          noteStr,
-          new Duration(...durationKeysToDurations[editorDuration])
-        )
-        n.makeCurrent = true
-        let v = new Voice([n]).at(0)
-        setCurrentVoice(v)
-        music.staves[0].entities = [...music.staves[0].entities, v]
-        setPreCurrent(false)
-      } else if (preCurrent) {
-        let n = new Verticality(
-          noteStr,
-          new Duration(...durationKeysToDurations[editorDuration])
-        )
-        n.makeCurrent = true
-        currentVoice.addBeforeIdx(n, 0)
-        setPreCurrent(false)
-      }
-      triggerRender()
-    } catch (err) {
-      console.log(Object.keys(err))
-      console.log(err.name)
-      if (err.name === "NotInVoiceError") {
-        // current refers to the dummy rests
-        // we put at the end of an incomplete measure.
-        // add the rest to the owning voice, then add
-        // the new verticality afterwards.
-        let cur = getCurrent()
-        cur.owner.add(cur)
-        let n = new Verticality(
-          noteStr,
-          new Duration(...durationKeysToDurations[editorDuration])
-        )
-        n.makeCurrent = true
-        cur.owner.add(n)
+            DOMIdsToVexflows[id][CURRENT].insertAfter(
+              new Verticality(
+                noteStr,
+                new Duration(...durationKeysToDurations[editorDuration])
+              )
+            )
+          else getCurrent().addNote(new Note(noteStr))
+        } else if (music.staves[0].empty) {
+          let n = new Verticality(
+            noteStr,
+            new Duration(...durationKeysToDurations[editorDuration])
+          )
+          n.makeCurrent = true
+          let v = new Voice([n]).at(0)
+          setCurrentVoice(v)
+          music.staves[0].entities = [...music.staves[0].entities, v]
+          setPreCurrent(false)
+        } else if (preCurrent) {
+          let n = new Verticality(
+            noteStr,
+            new Duration(...durationKeysToDurations[editorDuration])
+          )
+          n.makeCurrent = true
+          currentVoice.addBeforeIdx(n, 0)
+          setPreCurrent(false)
+        }
         triggerRender()
-      } else {
-        throw err
+      } catch (err) {
+        console.log(Object.keys(err))
+        console.log(err.name)
+        if (err.name === "NotInVoiceError") {
+          // current refers to the dummy rests
+          // we put at the end of an incomplete measure.
+          // add the rest to the owning voice, then add
+          // the new verticality afterwards.
+          let cur = getCurrent()
+          cur.owner.add(cur)
+          let n = new Verticality(
+            noteStr,
+            new Duration(...durationKeysToDurations[editorDuration])
+          )
+          n.makeCurrent = true
+          cur.owner.add(n)
+          triggerRender()
+        } else {
+          throw err
+        }
       }
-    }
-  }
+    },
+    [
+      CURRENT,
+      id,
+      editorDuration,
+      octave,
+      getCurrent,
+      music,
+      currentVoice,
+      preCurrent,
+    ]
+  )
 
   useEffect(() => {
     context.setLastInteractedElemId(id)
   }, [])
 
-  const processMIDINoteOn = (midiNoteNumber, velocity) => {
-    midiNotesDown[midiNoteNumber] = true
-    if (!firstMidiNote) {
-      firstMidiNote = midiNoteNumber
-    }
-    if (id === context.lastInteractedElemId) pianoRoll({}, midiNoteNumber)
-  }
+  const processMIDINoteOn = useCallback(
+    (midiNoteNumber, velocity) => {
+      midiNotesDown[midiNoteNumber] = true
+      if (!firstMidiNote) {
+        firstMidiNote = midiNoteNumber
+      }
+      if (id === context.lastInteractedElemId) pianoRoll({}, midiNoteNumber)
+    },
+    [id, context, pianoRoll]
+  )
 
-  const processMIDINoteOff = midiNoteNumber => {
+  const processMIDINoteOff = useCallback(midiNoteNumber => {
     if (midiNotesDown[midiNoteNumber]) {
       midiNotesDown[midiNoteNumber] = null
     }
     if (firstMidiNote === midiNoteNumber) firstMidiNote = null
-  }
+  }, [])
 
-  const processMIDI = midiMessage => {
-    let command = midiMessage.data[0]
-    let note = midiMessage.data[1]
-    let velocity = midiMessage.data.length > 2 ? midiMessage.data[2] : 0
+  const processMIDI = useCallback(
+    midiMessage => {
+      let command = midiMessage.data[0]
+      let note = midiMessage.data[1]
+      let velocity = midiMessage.data.length > 2 ? midiMessage.data[2] : 0
 
-    console.log(`MIDI message received: ${command} ${note} ${velocity}`)
-    if (command === 146 || command === 144) {
-      if (velocity > 0) processMIDINoteOn(note, velocity)
-      if (velocity === 0) processMIDINoteOff(note)
-    }
-    if (command === 191 && note === 113 && velocity === 127) {
-      enharmonicCurrent()
-    }
-    if (command === 191 && note === 114 && velocity === 127) {
-      adjustCurrentsOctave(-1)
-    }
-    if (command === 191 && note === 115 && velocity === 127) {
-      adjustCurrentsOctave(1)
-    }
-  }
+      console.log(`MIDI message received: ${command} ${note} ${velocity}`)
+      if (command === 146 || command === 144) {
+        if (velocity > 0) processMIDINoteOn(note, velocity)
+        if (velocity === 0) processMIDINoteOff(note)
+      }
+      if (command === 191 && note === 113 && velocity === 127) {
+        enharmonicCurrent()
+      }
+      if (command === 191 && note === 114 && velocity === 127) {
+        adjustCurrentsOctave(-1)
+      }
+      if (command === 191 && note === 115 && velocity === 127) {
+        adjustCurrentsOctave(1)
+      }
+    },
+    [
+      adjustCurrentsOctave,
+      enharmonicCurrent,
+      processMIDINoteOn,
+      processMIDINoteOff,
+    ]
+  )
 
   useEffect(() => {
     if (navigator.requestMIDIAccess) {
@@ -428,9 +451,9 @@ export const InfiniteVexflow = ({
         input.onmidimessage = processMIDI
       }
     }
-  }, [CURRENT, vexflowRenderTicker, context.lastInteractedElemId])
+  }, [MIDIInputs, processMIDI])
 
-  const moveCurrentToBeginningOfMeasure = () => {
+  const moveCurrentToBeginningOfMeasure = useCallback(() => {
     if (!getCurrent()) return
     let cur = getCurrent()
     if (cur.prev && cur.prev.position !== cur.position) {
@@ -440,9 +463,9 @@ export const InfiniteVexflow = ({
       cur = cur.prev
     }
     SETCURRENT(cur.DOMId)
-  }
+  }, [getCurrent])
 
-  const moveCurrentToEndOfMeasure = () => {
+  const moveCurrentToEndOfMeasure = useCallback(() => {
     if (!getCurrent()) return
 
     let cur = getCurrent()
@@ -453,9 +476,9 @@ export const InfiniteVexflow = ({
       cur = cur.next
     }
     SETCURRENT(cur.DOMId)
-  }
+  }, [getCurrent])
 
-  const replaceCurrentWithRest = () => {
+  const replaceCurrentWithRest = useCallback(() => {
     if (!getCurrent()) return
     if (getCurrent() instanceof Verticality) {
       if (getCurrent() === getCurrent().canonical)
@@ -476,60 +499,66 @@ export const InfiniteVexflow = ({
       preserveCurrent()
     }
     triggerRender()
-  }
+  }, [getCurrent, preserveCurrent])
 
-  const replaceCurrent = key => {
-    if (!getCurrent()) return
-    console.log(key)
-    console.log(pianoRollKeysToNotes[key])
-    let { letter, accidental, octaveAdjust } = pianoRollKeysToNotes[key]
-    let replacement = new Note(
-      letter,
-      accidental ? accidental : "",
-      octave + (octaveAdjust ? octaveAdjust : 0)
-    )
-    console.log(replacement)
-    let cur = getCurrent()
-    if (cur instanceof Verticality) {
-      if (cur.canonical === cur) {
-        cur.notes = [replacement]
+  const replaceCurrent = useCallback(
+    key => {
+      if (!getCurrent()) return
+      console.log(key)
+      console.log(pianoRollKeysToNotes[key])
+      let { letter, accidental, octaveAdjust } = pianoRollKeysToNotes[key]
+      let replacement = new Note(
+        letter,
+        accidental ? accidental : "",
+        octave + (octaveAdjust ? octaveAdjust : 0)
+      )
+      console.log(replacement)
+      let cur = getCurrent()
+      if (cur instanceof Verticality) {
+        if (cur.canonical === cur) {
+          cur.notes = [replacement]
+        }
       }
-    }
-    preserveCurrent()
-    triggerRender()
-  }
+      preserveCurrent()
+      triggerRender()
+    },
+    [getCurrent, preserveCurrent, octave]
+  )
 
-  const duplicateCurrent = () => {
+  const duplicateCurrent = useCallback(() => {
     if (!getCurrent()) return
     let cur = getCurrent()
     let copy = cur.copy()
     copy.makeCurrent = true
     cur.canonical.insertAfter(copy)
     triggerRender()
-  }
+  }, [getCurrent])
 
-  const transposeCurrent = steps => {
-    if (!getCurrent()) return
-    getCurrent().transposeByHalfSteps(steps)
-    preserveCurrent()
-    triggerRender()
-  }
+  const transposeCurrent = useCallback(
+    steps => {
+      if (!getCurrent()) return
+      getCurrent().transposeByHalfSteps(steps)
+      preserveCurrent()
+      triggerRender()
+    },
+    [getCurrent, preserveCurrent]
+  )
 
-  const moveCurrentToEndOfVoice = () => {
+  const moveCurrentToEndOfVoice = useCallback(() => {
     if (!getCurrent()) return
     let cur = getCurrent()
     while (cur.next) cur = cur.next
     SETCURRENT(cur.DOMId)
-  }
+  }, [getCurrent])
 
-  const moveCurrentToBeginningOfVoice = () => {
+  const moveCurrentToBeginningOfVoice = useCallback(() => {
     if (!getCurrent()) return
     let cur = getCurrent()
     while (cur.prev) cur = cur.prev
     SETCURRENT(cur.DOMId)
-  }
+  }, [getCurrent])
 
-  const addRest = () => {
+  const addRest = useCallback(() => {
     if (!getCurrent()) {
       if (music.staves[0].empty) {
         let n = new Rest(
@@ -572,9 +601,9 @@ export const InfiniteVexflow = ({
       }
     }
     triggerRender()
-  }
+  }, [getCurrent, editorDuration, music.staves, preCurrent])
 
-  const invertCurrentUp = () => {
+  const invertCurrentUp = useCallback(() => {
     if (
       !getCurrent() ||
       !(getCurrent() instanceof Verticality) ||
@@ -585,105 +614,115 @@ export const InfiniteVexflow = ({
     getCurrent().canonical.invertUp()
     preserveCurrent()
     triggerRender()
-  }
+  }, [getCurrent, preserveCurrent])
 
-  const adjustCurrentsOctave = n => {
-    if (!getCurrent() || !(getCurrent() instanceof Verticality)) {
-      return
-    }
-    if (getCurrent().isCanonical()) {
-      getCurrent().notes.forEach(note => (note.octave += n))
-      preserveCurrent()
-    } else {
-      // split up tie
-      let adjusted = getCurrent().withOctaveAdjustedBy(n)
-      adjusted.makeCurrent = true
-      getCurrent().canonical.insertBefore(adjusted)
-      getCurrent().canonical.duration = getCurrent().duration.minus(
-        adjusted.duration
-      )
-    }
-    triggerRender()
-  }
-
-  const createVoice = (direction = "upper", pianoRollKey) => {
-    console.log(pianoRollKey)
-    if (!(direction === "upper" || direction === "lower")) return
-    if (!getCurrent()) return
-    let durationInMeasure = null
-    if (
-      !getCurrent().prev ||
-      getCurrent().prev.position < getCurrent().position
-    ) {
-      durationInMeasure = null
-    } else {
-      let prev = getCurrent().prev
-      let dur = prev.duration.copy()
-      while (prev.prev && prev.prev.position === prev.position) {
-        prev = prev.prev
-        dur = dur.plus(prev.duration.copy())
+  const adjustCurrentsOctave = useCallback(
+    n => {
+      if (!getCurrent() || !(getCurrent() instanceof Verticality)) {
+        return
       }
-      durationInMeasure = dur
-    }
-    let pos = getCurrent().position
-    let comparisonNote
-    if (direction === "upper") {
-      comparisonNote = getCurrent().notes[getCurrent().notes.length - 1]
-    } else comparisonNote = getCurrent().notes[0]
-    let oct = comparisonNote.octave
-    let { letter, accidental } = pianoRollKeysToNotes[pianoRollKey]
-    let n = new Note(`${letter}${accidental}${oct}`)
-    if (
-      n.midiNoteNumber <= comparisonNote.midiNoteNumber &&
-      direction === "upper"
-    ) {
-      n.octave += 1
-      setOctave(n.octave)
-    } else if (
-      n.midiNoteNumber >= comparisonNote.midiNoteNumber &&
-      direction === "lower"
-    ) {
-      n.octave -= 1
-      setOctave(n.octave)
-    }
-    let v
-    if (durationInMeasure) {
-      v = new Voice([
-        new Rest(durationInMeasure),
-        new Verticality([n]).asCurrent(),
-      ]).at(pos)
-    } else {
-      v = new Voice([new Verticality([n]).asCurrent()]).at(pos)
-    }
-    console.log(music.staves[0])
-    music.staves[0].add(v)
-    triggerRender()
-  }
-
-  const createVoicingOnCurrent = voicingStr => {
-    if (!getCurrent()) return
-    if (!(getCurrent() instanceof Verticality)) return
-    let notes = [
-      ...voicingStr.split("").map(s => {
-        if (s === "t") return 10
-        if (s === "e") return 11
-        return parseInt(s, 10)
-      }),
-    ].map(
-      num =>
-        new Note(
-          num + getCurrent().notes[getCurrent().notes.length - 1].midiNoteNumber
+      if (getCurrent().isCanonical()) {
+        getCurrent().notes.forEach(note => (note.octave += n))
+        preserveCurrent()
+      } else {
+        // split up tie
+        let adjusted = getCurrent().withOctaveAdjustedBy(n)
+        adjusted.makeCurrent = true
+        getCurrent().canonical.insertBefore(adjusted)
+        getCurrent().canonical.duration = getCurrent().duration.minus(
+          adjusted.duration
         )
-    )
-    console.log(notes)
-    getCurrent().notes = [...getCurrent().notes, ...notes]
-    preserveCurrent()
-    triggerRender()
+      }
+      triggerRender()
+    },
+    [getCurrent, preserveCurrent]
+  )
 
-    console.log(voicingStr)
-  }
+  const createVoice = useCallback(
+    (direction = "upper", pianoRollKey) => {
+      console.log(pianoRollKey)
+      if (!(direction === "upper" || direction === "lower")) return
+      if (!getCurrent()) return
+      let durationInMeasure = null
+      if (
+        !getCurrent().prev ||
+        getCurrent().prev.position < getCurrent().position
+      ) {
+        durationInMeasure = null
+      } else {
+        let prev = getCurrent().prev
+        let dur = prev.duration.copy()
+        while (prev.prev && prev.prev.position === prev.position) {
+          prev = prev.prev
+          dur = dur.plus(prev.duration.copy())
+        }
+        durationInMeasure = dur
+      }
+      let pos = getCurrent().position
+      let comparisonNote
+      if (direction === "upper") {
+        comparisonNote = getCurrent().notes[getCurrent().notes.length - 1]
+      } else comparisonNote = getCurrent().notes[0]
+      let oct = comparisonNote.octave
+      let { letter, accidental } = pianoRollKeysToNotes[pianoRollKey]
+      let n = new Note(`${letter}${accidental}${oct}`)
+      if (
+        n.midiNoteNumber <= comparisonNote.midiNoteNumber &&
+        direction === "upper"
+      ) {
+        n.octave += 1
+        setOctave(n.octave)
+      } else if (
+        n.midiNoteNumber >= comparisonNote.midiNoteNumber &&
+        direction === "lower"
+      ) {
+        n.octave -= 1
+        setOctave(n.octave)
+      }
+      let v
+      if (durationInMeasure) {
+        v = new Voice([
+          new Rest(durationInMeasure),
+          new Verticality([n]).asCurrent(),
+        ]).at(pos)
+      } else {
+        v = new Voice([new Verticality([n]).asCurrent()]).at(pos)
+      }
+      console.log(music.staves[0])
+      music.staves[0].add(v)
+      triggerRender()
+    },
+    [getCurrent, music.staves]
+  )
 
-  const invertCurrentDown = () => {
+  const createVoicingOnCurrent = useCallback(
+    voicingStr => {
+      if (!getCurrent()) return
+      if (!(getCurrent() instanceof Verticality)) return
+      let notes = [
+        ...voicingStr.split("").map(s => {
+          if (s === "t") return 10
+          if (s === "e") return 11
+          return parseInt(s, 10)
+        }),
+      ].map(
+        num =>
+          new Note(
+            num +
+              getCurrent().notes[getCurrent().notes.length - 1].midiNoteNumber
+          )
+      )
+      console.log(notes)
+      getCurrent().notes = [...getCurrent().notes, ...notes]
+      preserveCurrent()
+      triggerRender()
+
+      console.log(voicingStr)
+    },
+    [getCurrent, preserveCurrent]
+  )
+
+  const invertCurrentDown = useCallback(() => {
     if (
       !getCurrent() ||
       !(getCurrent() instanceof Verticality) ||
@@ -694,23 +733,23 @@ export const InfiniteVexflow = ({
     getCurrent().canonical.invertDown()
     preserveCurrent()
     triggerRender()
-  }
+  }, [getCurrent, preserveCurrent])
 
-  const augmentCurrent = () => {
+  const augmentCurrent = useCallback(() => {
     if (!getCurrent() || getCurrent().canonical.duration >= 4) return
     getCurrent().canonical.duration.augment(2)
     preserveCurrent()
     triggerRender()
-  }
+  }, [getCurrent, preserveCurrent])
 
-  const diminuteCurrent = () => {
+  const diminuteCurrent = useCallback(() => {
     if (!getCurrent() || getCurrent().canonical.duration < 1 / 8) return
     getCurrent().canonical.duration.diminute(2)
     preserveCurrent()
     triggerRender()
-  }
+  }, [getCurrent, preserveCurrent])
 
-  const enharmonicCurrent = () => {
+  const enharmonicCurrent = useCallback(() => {
     if (!getCurrent()) return
     if (getCurrent().notes && getCurrent().notes.length === 1) {
       getCurrent().notes[0].toEnharmonic()
@@ -725,9 +764,9 @@ export const InfiniteVexflow = ({
     }
     preserveCurrent()
     triggerRender()
-  }
+  }, [getCurrent, preserveCurrent])
 
-  const addForcedNatural = () => {
+  const addForcedNatural = useCallback(() => {
     if (!getCurrent() || !(getCurrent() instanceof Verticality)) return
     if (getCurrent().notes.length > 1) return
     if (getCurrent().notes[0].accidental === "n")
@@ -736,9 +775,9 @@ export const InfiniteVexflow = ({
       getCurrent().notes[0].accidental = "n"
     preserveCurrent()
     triggerRender()
-  }
+  }, [getCurrent, preserveCurrent])
 
-  const switchCurrentVoice = () => {
+  const switchCurrentVoice = useCallback(() => {
     if (!getCurrent() || music.staves[0].voices.length === 1) return
     let voices = music.staves[0].voices
     let me = 0
@@ -753,9 +792,9 @@ export const InfiniteVexflow = ({
     let currentStartsAt = getCurrent().startsAt
     let switched = voices[idx]
     for (let i = 0; i < switched.temporals.length; i++) {}
-  }
+  }, [getCurrent])
 
-  const backspace = () => {
+  const backspace = useCallback(() => {
     if (!getCurrent()) return
     try {
       if (getCurrent().owner.temporals.length === 1) {
@@ -777,27 +816,31 @@ export const InfiniteVexflow = ({
       }
     }
     triggerRender()
-  }
+  }, [id, context, getCurrent])
 
-  const addClef = type => {
-    // adds a clef to the current measure.
-    // TODO:  for now, only can add a clef to the beginning of a measure
-    // replaces clef if there already is one.
-    if (!noNotes && !getCurrent()) return
+  const addClef = useCallback(
+    type => {
+      // adds a clef to the current measure.
+      // TODO:  for now, only can add a clef to the beginning of a measure
+      // replaces clef if there already is one.
+      if (!noNotes && !getCurrent()) return
+      if (noNotes) return
 
-    let clefs = music.staves[0].clefs
-    let clefMap = {}
-    clefs.forEach(
-      clef => (clefMap[clef.position] = { type: clef.type, owner: clef })
-    )
-    if (!clefMap[getCurrent().position])
-      music.staves[0].add(new Clef(type).at(getCurrent().position))
-    else clefMap[getCurrent().position].owner.type = type
-    preserveCurrent()
-    triggerRender()
-  }
+      let clefs = music.staves[0].clefs
+      let clefMap = {}
+      clefs.forEach(
+        clef => (clefMap[clef.position] = { type: clef.type, owner: clef })
+      )
+      if (!clefMap[getCurrent().position])
+        music.staves[0].add(new Clef(type).at(getCurrent().position))
+      else clefMap[getCurrent().position].owner.type = type
+      preserveCurrent()
+      triggerRender()
+    },
+    [noNotes, getCurrent, music.staves, preserveCurrent]
+  )
 
-  const deleteClef = () => {
+  const deleteClef = useCallback(() => {
     if (!getCurrent()) return
     let clefs = music.staves[0].clefs
     for (let clef of clefs) {
@@ -806,9 +849,9 @@ export const InfiniteVexflow = ({
     }
     preserveCurrent()
     triggerRender()
-  }
+  }, [music.staves, getCurrent, preserveCurrent])
 
-  const addDot = () => {
+  const addDot = useCallback(() => {
     if (!getCurrent()) return
     // if current note doesn't tie *toward* the barline
     let current = getCurrent()
@@ -831,7 +874,7 @@ export const InfiniteVexflow = ({
       canonical.makeCurrent = true
     }
     triggerRender()
-  }
+  }, [getCurrent])
 
   const submitCommandFieldCommand = useCallback(() => {
     if (showCommandField) {
@@ -971,7 +1014,9 @@ export const InfiniteVexflow = ({
     },
     "add rest": {
       key: /^r$/,
-      fn: () => addRest(),
+      fn: e => {
+        if (!e.metaKey) addRest()
+      },
       commandField: false,
     },
     "add dot": {
@@ -1138,7 +1183,7 @@ export const InfiniteVexflow = ({
       unlog()
     },
     // CHANGE THIS
-    [commands, setCurrentToDur, moveCurrentRight, moveCurrentLeft, backspace]
+    [id, context, showCommandField, commands]
   )
 
   const onKeyUp = useCallback(
@@ -1165,7 +1210,7 @@ export const InfiniteVexflow = ({
       if (e.key === firstPianoRollKey) firstPianoRollKey = null
       unlog()
     },
-    [commandFieldCommands]
+    [commandKeys, showCommandField, commandFieldCommands]
   )
 
   const removeSVGs = () => {
@@ -1451,6 +1496,12 @@ export const InfiniteVexflow = ({
   }
 
   useEffect(() => {
+    // TODO this has no sense for width and height
+    if (viewportX > window.innerWidth * 1.5) return
+    if (viewportY > window.innerHeight * 1.5) return
+    if (viewportX < (window.innerWidth / 2) * -1) return
+    if (viewportY < (window.innerHeight / 2) * -1) return
+    console.log("vexflow component within viewport")
     removeSVGs()
     renderVexflow()
   }, [vexflowRenderTicker])
@@ -1466,6 +1517,28 @@ export const InfiniteVexflow = ({
 
   const scaled = n => n * context.zoom.scale * options.scale
 
+  if (shouldHide(id, context)) return null
+  if (wheeling) {
+    if (wheelingLastTime[id] === false) {
+      preserveCurrent()
+      setIsHovering(false)
+    }
+    wheelingLastTime[id] = true
+    return (
+      <Crosshair
+        x={viewportX}
+        y={viewportY}
+        scale={context.zoom.scale}
+        adjustX={20}
+        adjustY={80}
+      />
+    )
+  }
+
+  if (wheelingLastTime[id] === true) {
+    triggerRender()
+  }
+  wheelingLastTime[id] = false
   return (
     <>
       {id === context.lastInteractedElemEd && context.inspecting && selected ? (
@@ -1570,7 +1643,7 @@ export const InfiniteVexflow = ({
           : null}
         */}
 
-      {debug ? (
+      {debug && context.lastInteractedElemId === id ? (
         <div
           className="noselect"
           style={{

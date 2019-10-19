@@ -1,17 +1,17 @@
 import React, { useState, useCallback, useEffect } from "react"
 import { viewport } from "../../lib/infinite-util"
-import { dragging } from "../../pages/compose.js"
+import { dragging, wheeling } from "../../pages/compose.js"
 import {
   HoverButtons,
   inspectorForElement,
   selection,
   shouldHide,
+  Crosshair,
 } from "./common"
 
 let mouseDown = false
 
 const InfiniteTextArea = ({ context, id, scale, selected, x, y, ...save }) => {
-  if (shouldHide(id, context)) return null
   const { viewportX, viewportY } = viewport(x, y, context)
 
   const [text, setText] = useState(save.text ? save.text : "")
@@ -27,28 +27,35 @@ const InfiniteTextArea = ({ context, id, scale, selected, x, y, ...save }) => {
 
   const pushStateToCanvas = useCallback(() => {
     context.saveElement(id, { text, bounding, options })
-  }, [text, options, bounding])
+  }, [id, context, text, options, bounding])
 
   useEffect(() => {
     pushStateToCanvas()
   }, [text, bounding])
 
-  const onChange = event => {
-    context.setLastInteractedElemId(id)
-    setText(event.target.value)
-  }
+  const onChange = useCallback(
+    event => {
+      context.setLastInteractedElemId(id)
+      setText(event.target.value)
+    },
+    [context, id]
+  )
 
-  const onClick = e => selection(e, id, context, selected)
+  const onClick = useCallback(e => selection(e, id, context, selected), [
+    id,
+    context,
+    selected,
+  ])
 
-  const onMouseDown = e => {
+  const onMouseDown = useCallback(e => {
     mouseDown = true
     if (e.shiftKey) {
       e.preventDefault()
       document.activeElement.blur()
     }
-  }
+  }, [])
 
-  const onMouseUp = e => {
+  const onMouseUp = useCallback(() => {
     mouseDown = false
     let { width, height } = document
       .getElementById(`textarea-${id}`)
@@ -56,9 +63,18 @@ const InfiniteTextArea = ({ context, id, scale, selected, x, y, ...save }) => {
     width /= context.zoom.scale * options.scale
     height /= context.zoom.scale * options.scale
     setBounding({ width, height })
-  }
+  }, [id, context, options])
 
-  const scaled = n => n * context.zoom.scale * options.scale
+  const scaled = useCallback(n => n * context.zoom.scale * options.scale, [
+    context.zoom.scale,
+    options.scale,
+  ])
+
+  if (shouldHide(id, context)) return null
+  if (wheeling) {
+    if (hovering) setHovering(false)
+    return <Crosshair x={viewportX} y={viewportY} scale={context.zoom.scale} />
+  }
 
   return (
     <>
@@ -86,7 +102,7 @@ const InfiniteTextArea = ({ context, id, scale, selected, x, y, ...save }) => {
             resize: options.resizable ? "both" : "none",
             marginBottom: 0,
             border: `1px solid ${
-              hovering || selected || mouseDown || dragging.id === id
+              hovering || selected || dragging.id === id
                 ? "grey"
                 : "transparent"
             }`,
@@ -123,41 +139,41 @@ const InfiniteTextArea = ({ context, id, scale, selected, x, y, ...save }) => {
         options={options}
       />
       {/*
-      <div
-        style={{
+          <div
+          style={{
           position: "fixed",
           left: viewportX - scaled(12),
           top: viewportY,
           width: scaled(12),
           height: scaled(20),
-        }}
-        onMouseEnter={() => setHovering(true)}
-        onMouseLeave={() => setHovering(false)}
-      >
-        {hovering || selected || dragging.id === id || mouseDown ? (
+          }}
+          onMouseEnter={() => setHovering(true)}
+          onMouseLeave={() => setHovering(false)}
+          >
+          {hovering || selected || dragging.id === id || mouseDown ? (
           <>
-            <DeleteButton
-              id={id}
-              context={context}
-              style={{
-                left: viewportX - 12 * context.zoom.scale * options.scale,
-                top: viewportY - 0 * context.zoom.scale * options.scale,
-                transform: `scale(${context.zoom.scale * options.scale})`,
-              }}
-            />
-            <MoveButton
-              id={id}
-              context={context}
-              style={{
-                left: viewportX - 12 * context.zoom.scale * options.scale,
-                top: viewportY + 10 * context.zoom.scale * options.scale,
-                transform: `scale(${context.zoom.scale * options.scale})`,
-              }}
-            />
+          <DeleteButton
+          id={id}
+          context={context}
+          style={{
+          left: viewportX - 12 * context.zoom.scale * options.scale,
+          top: viewportY - 0 * context.zoom.scale * options.scale,
+          transform: `scale(${context.zoom.scale * options.scale})`,
+          }}
+          />
+          <MoveButton
+          id={id}
+          context={context}
+          style={{
+          left: viewportX - 12 * context.zoom.scale * options.scale,
+          top: viewportY + 10 * context.zoom.scale * options.scale,
+          transform: `scale(${context.zoom.scale * options.scale})`,
+          }}
+          />
           </>
-        ) : null}
-      </div>
-      */}
+          ) : null}
+          </div>
+        */}
     </>
   )
 }

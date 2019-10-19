@@ -2,7 +2,7 @@ module.exports = {
   env: {
     browser: true,
     es6: true,
-    jest: true
+    jest: true,
   },
   extends: ["eslint:recommended", "plugin:react/recommended"],
   globals: {
@@ -16,10 +16,12 @@ module.exports = {
     ecmaVersion: 2018,
     sourceType: "module",
   },
-  plugins: ["react"],
+  plugins: ["react", "react-hooks"],
   rules: {
     "react/prop-types": 0,
     "no-console": 1,
-    "no-unused-vars": 1
+    "no-unused-vars": 1,
+    "react-hooks/rules-of-hooks": "error",
+    "react-hooks/exhaustive-deps": "warn",
   },
 }

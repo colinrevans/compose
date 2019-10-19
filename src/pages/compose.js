@@ -3,10 +3,7 @@ import { equals } from "ramda"
 import { Sampler } from "tone"
 import { setPropertyForAll } from "../lib/infinite-util"
 import Inspector from "../components/compose/inspector"
-import InfiniteVexflow, {
-  startWheeling,
-  stopWheeling,
-} from "../components/compose/InfiniteVexflow2"
+import InfiniteVexflow from "../components/compose/InfiniteVexflow2"
 import InfiniteTextArea from "../components/compose/InfiniteTextArea"
 import HelpMenu from "../components/compose/HelpMenu.js"
 import OverlayUI from "../components/compose/OverlayUI.js"
@@ -16,7 +13,7 @@ import InfinitePDF from "../components/compose/InfinitePDF.js"
 import "../components/layout.css"
 
 let wheelTimeout = null
-let lastWheelTime = null
+export let wheeling = false
 
 export let dragging = {}
 export const setDragging = x => {
@@ -58,7 +55,7 @@ const Compose = () => {
 
   const [translate, setTranslate] = useState({ x: 0, y: 0 })
   const [zoom, setZoom] = useState({ scale: 1 })
-  const [elements, setElements] = useState([])
+  const [elements, _setElements] = useState([])
   const [showHelp, setShowHelp] = useState(false)
   // 1 is zoom in, -1 is zoom out, 0 is don't zoom
   const [zoomMode, setZoomMode] = useState(0)
@@ -74,21 +71,43 @@ const Compose = () => {
   // see useEffect below that saves canvas whenever
   // this changes.
   const [saveTicker, setSaveTicker] = useState(null)
+  const setElements = (x, from) => {
+    console.log("setting elements")
+    if (from) console.log("from ", from)
+    _setElements(x)
+  }
+
+  for (let element of elements) {
+    if (element.id > idCount) idCount = element.id + 1
+  }
 
   {
     /* LOADING AND SAVING */
   }
 
   const saveCanvas = () => {
-    let saveData = { elements, translate }
+    console.log("elements to save: ", elements)
+    let saveData = { elements, translate, zoom }
     localStorage.setItem("canvas", JSON.stringify(saveData))
     console.log("SAVED CANVAS")
   }
 
-  // 'pushes' state bottom up -- this is called from within child elements using the provided context!
+  // 'pushes' state bottom up -- this is called from within child elements using the provided context
   const saveElement = (id, saveState) => {
-    setElements(elements =>
-      elements.map(elem => (elem.id === id ? { ...elem, ...saveState } : elem))
+    // within options, scale is encoded as its reciprocal
+    // for a more intuitive user experience
+    let scale
+    if (saveState.options) {
+      if (saveState.options.scale) scale = 1 / saveState.options.scale
+    }
+    setElements(
+      elements =>
+        elements.map(elem =>
+          elem.id === id
+            ? { ...elem, ...saveState, scale: scale || elem.scale }
+            : elem
+        ),
+      "c98"
     )
     setSaveTicker(s => !s)
   }
@@ -109,10 +128,13 @@ const Compose = () => {
         selected: false,
       })),
     }
-    let { elements, translate } = saveData
-    setElements(elements)
-    if (elements.length > 0) idCount = elements[elements.length - 1].id + 1
-    if (elements.length > 0) setTranslate(translate)
+    let { elements, translate, zoom } = saveData
+    setElements(elements, "119")
+    if (elements.length > 0) {
+      idCount = elements[elements.length - 1].id + 1
+      setTranslate(translate)
+      setZoom(zoom)
+    }
   }, [])
 
   {
@@ -120,19 +142,22 @@ const Compose = () => {
   }
 
   const createElement = (component, x = mouse.x, y = mouse.y, options = {}) => {
-    setElements(elements => [
-      ...elements,
-      {
-        x,
-        y,
-        scale: zoom.scale,
-        id: idCount,
-        component,
-        componentName: component.name,
-        selected: false,
-        ...options,
-      },
-    ])
+    setElements(
+      elements => [
+        ...elements,
+        {
+          x,
+          y,
+          scale: zoom.scale,
+          id: idCount,
+          component,
+          componentName: component.name,
+          selected: false,
+          ...options,
+        },
+      ],
+      "c141"
+    )
     setLastInteractedElemId(idCount)
     if (component.name === "InfiniteVexflow") setNoteMode(true)
     idCount += 1
@@ -208,7 +233,7 @@ const Compose = () => {
           } else return { ...elem, x: firstX }
         } else return elem
       })
-    })
+    }, "c217")
   }
 
   {
@@ -221,9 +246,17 @@ const Compose = () => {
     "navigate right": { fn: navigateRight, keys: [16, 68], mode: "canvas" },
     "navigate up": { fn: navigateUp, keys: [16, 87], mode: "canvas" },
     "navigate down": { fn: navigateDown, keys: [16, 83], mode: "canvas" },
-    clear: { fn: () => setElements([]), keys: [16, 67], mode: "canvas" },
+    clear: {
+      fn: () => setElements([], "clear"),
+      keys: [16, 67],
+      mode: "canvas",
+    },
     "delete last": {
-      fn: () => setElements(elements => elements.slice(0, elements.length - 1)),
+      fn: () =>
+        setElements(
+          elements => elements.slice(0, elements.length - 1),
+          "delete last"
+        ),
       keys: [16, 88],
       mode: "canvas",
     },
@@ -303,7 +336,10 @@ const Compose = () => {
     },
     "delete selected": {
       fn: () =>
-        setElements(elements => elements.filter(elem => !elem.selected)),
+        setElements(
+          elements => elements.filter(elem => !elem.selected),
+          "delete selected"
+        ),
       keys: [8, 16],
       mode: "any",
     },
@@ -502,10 +538,10 @@ const Compose = () => {
                 y: translate.y - dy,
               }))
             }
-            startWheeling()
+            wheeling = true
             if (wheelTimeout) clearTimeout(wheelTimeout)
             wheelTimeout = setTimeout(() => {
-              stopWheeling()
+              wheeling = false
               wheelTimeout = null
               // trigger a rerender
               setTick(m => !m)
@@ -515,8 +551,9 @@ const Compose = () => {
             if (zoomMode === 1) zoomIn()
             if (zoomMode === -1) zoomOut()
             if (zoomMode !== 0) e.preventDefault()
-            setElements(elements =>
-              elements.map(elem => ({ ...elem, selected: false }))
+            setElements(
+              elements => elements.map(elem => ({ ...elem, selected: false })),
+              "c524"
             )
           }}
           style={{
@@ -537,17 +574,19 @@ const Compose = () => {
               return orig + by / zoom.scale
             }
             let cp = dragging
-            setElements(es =>
-              es.map(elem => {
-                return elem.id == cp.id
-                  ? {
-                      ...elem,
-                      selected: true,
-                      x: shift(elem.x, e.pageX - cp.x),
-                      y: shift(elem.y, e.pageY - cp.y),
-                    }
-                  : elem
-              })
+            setElements(
+              es =>
+                es.map(elem => {
+                  return elem.id == cp.id
+                    ? {
+                        ...elem,
+                        selected: true,
+                        x: shift(elem.x, e.pageX - cp.x),
+                        y: shift(elem.y, e.pageY - cp.y),
+                      }
+                    : elem
+                }),
+              "c546"
             )
             e.persist()
             dragging = {}
