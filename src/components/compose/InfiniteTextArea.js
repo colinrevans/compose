@@ -110,7 +110,7 @@ const InfiniteTextArea = ({ context, id, scale, selected, x, y, ...save }) => {
             fontSize: 14,
             transform: `scale(${context.zoom.scale / (1 / options.scale)})`,
             transformOrigin: "top left",
-            padding: 0,
+            padding: 1,
           }}
           id={`textarea-${id}`}
           value={text}
