@@ -1663,12 +1663,14 @@ export const InfiniteVexflow = ({
           className="noselect"
           style={{
             position: "fixed",
-            bottom: 20,
-            right: 100,
+            bottom: 70,
+            left: "2vw",
             fontSize: 10,
             backgroundColor: "wheat",
             lineHeight: "1.1em",
             zIndex: 15,
+            padding: 5,
+            border: "1px solid #999999",
           }}
         >
           {`preCurrent: ${preCurrent}`}
