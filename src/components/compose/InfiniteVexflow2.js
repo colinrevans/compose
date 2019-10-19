@@ -1666,6 +1666,9 @@ export const InfiniteVexflow = ({
             bottom: 20,
             right: 100,
             fontSize: 10,
+            backgroundColor: "wheat",
+            lineHeight: "1.1em",
+            zIndex: 15,
           }}
         >
           {`preCurrent: ${preCurrent}`}
