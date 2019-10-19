@@ -1,6 +1,7 @@
 import React, { useState, useCallback, useEffect } from "react"
 import { viewport } from "../../lib/infinite-util"
 import { dragging, wheeling } from "../../pages/compose.js"
+import { clone } from "ramda"
 import {
   HoverButtons,
   inspectorForElement,
@@ -19,15 +20,27 @@ const InfiniteTextArea = ({ context, id, scale, selected, x, y, ...save }) => {
     save.bounding ? save.bounding : { width: 100, height: 70 }
   )
   const [hovering, setHovering] = useState(false)
-  const [options, setOptions] = useState({
-    scale: 1 / scale,
-    color: "black",
-    resizable: true,
-  })
+  const [options, setOptions] = useState(
+    save.options
+      ? save.options
+      : {
+          scale: 1 / scale,
+          color: "black",
+          resizable: true,
+        }
+  )
 
-  const pushStateToCanvas = useCallback(() => {
-    context.saveElement(id, { text, bounding, options })
-  }, [id, context, text, options, bounding])
+  const pushStateToCanvas = useCallback(
+    opts => {
+      context.saveElement(id, {
+        text,
+        bounding,
+        options: opts ? opts : options,
+      })
+      console.log("saved with ", clone(opts ? opts : options), "id", id)
+    },
+    [id, context, text, options, bounding]
+  )
 
   useEffect(() => {
     if (!text === save.text) pushStateToCanvas()
@@ -74,7 +87,14 @@ const InfiniteTextArea = ({ context, id, scale, selected, x, y, ...save }) => {
 
   return (
     <>
-      {inspectorForElement(id, context, selected, options, setOptions)}
+      {inspectorForElement(
+        id,
+        context,
+        selected,
+        options,
+        setOptions,
+        pushStateToCanvas
+      )}
       <div
         style={{
           position: "fixed",

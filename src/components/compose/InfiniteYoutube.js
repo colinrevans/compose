@@ -1,4 +1,4 @@
-import React, { useState } from "react"
+import React, { useState, useCallback } from "react"
 import { Youtube } from "../embeds"
 import { viewport } from "../../lib/infinite-util.js"
 import { dragging, wheeling } from "../../pages/compose"
@@ -10,15 +10,26 @@ import {
   inspectorForElement,
 } from "./common"
 
-const InfiniteYoutube = ({ context, scale, x, y, id, selected, ...props }) => {
+const InfiniteYoutube = ({ context, scale, x, y, id, selected, ...save }) => {
   const { viewportX, viewportY } = viewport(x, y, context)
 
   const [isHovering, setIsHovering] = useState(false)
   const [loaded, setLoaded] = useState(false)
-  const [options, setOptions] = useState({
-    scale: 1 / scale,
-    src: props.src ? props.src : "",
-  })
+  const [options, setOptions] = useState(
+    save.options
+      ? save.options
+      : {
+          scale: 1 / scale,
+          src: "",
+        }
+  )
+
+  const pushStateToCanvas = useCallback(
+    opts => {
+      context.saveElement(id, { options: opts ? opts : options })
+    },
+    [id, context, options]
+  )
 
   const onClick = e => selection(e, id, context, selected)
 
@@ -26,7 +37,14 @@ const InfiniteYoutube = ({ context, scale, x, y, id, selected, ...props }) => {
 
   return (
     <>
-      {inspectorForElement(id, context, selected, options, setOptions)}
+      {inspectorForElement(
+        id,
+        context,
+        selected,
+        options,
+        setOptions,
+        pushStateToCanvas
+      )}
 
       <HoverButtons
         id={id}

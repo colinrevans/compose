@@ -4,7 +4,7 @@ import Button from "@material-ui/core/Button"
 import Checkbox from "@material-ui/core/Checkbox"
 import TextField from "@material-ui/core/TextField"
 
-export const Inspector = ({ options, setOptions }) => {
+export const Inspector = ({ options, setOptions, pushState }) => {
   const [tempOptions, setTempOptions] = useState(options)
 
   const handleChange = (e, key) => {
@@ -38,9 +38,11 @@ export const Inspector = ({ options, setOptions }) => {
                       ? OptionsToggle
                       : OptionsTextField,
                     {
+                      options,
                       optionKey: key,
                       optionValue: tempOptions[key],
                       setOptions,
+                      pushState,
                     }
                   )}
                 </div>
@@ -52,26 +54,40 @@ export const Inspector = ({ options, setOptions }) => {
   )
 }
 
-const OptionsToggle = ({ optionKey, optionValue, setOptions }) => {
+const OptionsToggle = ({
+  options,
+  optionKey,
+  optionValue,
+  setOptions,
+  pushState,
+}) => {
   const [toggleValue, setToggleValue] = useState(optionValue)
   return (
     <Checkbox
       color="default"
       onClick={e => {
         setToggleValue(v => !v)
+        let newOpts = { ...options, [optionKey]: !options[optionKey] }
         setOptions(options => ({
           ...options,
           [optionKey]: !options[optionKey],
         }))
         e.stopPropagation()
         e.preventDefault()
+        pushState(newOpts)
       }}
       checked={toggleValue}
     />
   )
 }
 
-const OptionsTextField = ({ optionKey, optionValue, setOptions }) => {
+const OptionsTextField = ({
+  options,
+  optionKey,
+  optionValue,
+  setOptions,
+  pushState,
+}) => {
   const [textFieldValue, setTextFieldValue] = useState(optionValue)
   return (
     <TextField
@@ -81,12 +97,14 @@ const OptionsTextField = ({ optionKey, optionValue, setOptions }) => {
       }}
       onKeyDown={e => {
         if (e.keyCode === 13) {
+          let newOpts = { ...options, [optionKey]: textFieldValue }
           setOptions(options => ({
             ...options,
             [optionKey]: textFieldValue,
           }))
           e.stopPropagation()
           e.preventDefault()
+          pushState(newOpts)
         }
       }}
     />

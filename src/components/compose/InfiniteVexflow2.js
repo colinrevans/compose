@@ -1553,7 +1553,11 @@ export const InfiniteVexflow = ({
   return (
     <>
       {id === context.lastInteractedElemEd && context.inspecting && selected ? (
-        <Inspector options={options} setOptions={setOptions} />
+        <Inspector
+          options={options}
+          setOptions={setOptions}
+          pushState={pushStateToCanvas}
+        />
       ) : null}
 
       {id === context.lastInteractedElemId && context.noteMode ? (

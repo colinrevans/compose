@@ -26,12 +26,17 @@ export const inspectorForElement = (
   context,
   selected,
   options,
-  setOptions
+  setOptions,
+  pushStateToCanvas
 ) => {
   return id === context.lastInteractedElemId &&
     context.inspecting &&
     selected ? (
-    <Inspector options={options} setOptions={setOptions} />
+    <Inspector
+      options={options}
+      setOptions={setOptions}
+      pushState={pushStateToCanvas}
+    />
   ) : null
 }
 
