@@ -71,10 +71,6 @@ const InfiniteTextArea = ({ context, id, scale, selected, x, y, ...save }) => {
   ])
 
   if (shouldHide(id, context)) return null
-  if (wheeling) {
-    if (hovering) setHovering(false)
-    return <Crosshair x={viewportX} y={viewportY} scale={context.zoom.scale} />
-  }
 
   return (
     <>

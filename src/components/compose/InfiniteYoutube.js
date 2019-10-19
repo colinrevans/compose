@@ -1,18 +1,16 @@
 import React, { useState } from "react"
 import { Youtube } from "../embeds"
 import { viewport } from "../../lib/infinite-util.js"
-import { dragging } from "../../pages/compose"
-import { HoverButtons } from "./common"
+import { dragging, wheeling } from "../../pages/compose"
 import {
-  DeleteButton,
-  MoveButton,
+  HoverButtons,
+  Crosshair,
   selection,
   shouldHide,
   inspectorForElement,
 } from "./common"
 
 const InfiniteYoutube = ({ context, scale, x, y, id, selected, ...props }) => {
-  if (shouldHide(id, context)) return null
   const { viewportX, viewportY } = viewport(x, y, context)
 
   const [isHovering, setIsHovering] = useState(false)
@@ -23,6 +21,8 @@ const InfiniteYoutube = ({ context, scale, x, y, id, selected, ...props }) => {
   })
 
   const onClick = e => selection(e, id, context, selected)
+
+  if (shouldHide(id, context)) return null
 
   return (
     <>

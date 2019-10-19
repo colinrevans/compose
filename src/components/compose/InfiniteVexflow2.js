@@ -1501,7 +1501,9 @@ export const InfiniteVexflow = ({
     if (viewportY > window.innerHeight * 1.5) return
     if (viewportX < (window.innerWidth / 2) * -1) return
     if (viewportY < (window.innerHeight / 2) * -1) return
-    console.log("vexflow component within viewport")
+    console.log("*********************************")
+    console.log("RENDER: vexflow component within viewport")
+    console.log("********************************")
     removeSVGs()
     renderVexflow()
   }, [vexflowRenderTicker])
@@ -1518,27 +1520,6 @@ export const InfiniteVexflow = ({
   const scaled = n => n * context.zoom.scale * options.scale
 
   if (shouldHide(id, context)) return null
-  if (wheeling) {
-    if (wheelingLastTime[id] === false) {
-      preserveCurrent()
-      setIsHovering(false)
-    }
-    wheelingLastTime[id] = true
-    return (
-      <Crosshair
-        x={viewportX}
-        y={viewportY}
-        scale={context.zoom.scale}
-        adjustX={20}
-        adjustY={80}
-      />
-    )
-  }
-
-  if (wheelingLastTime[id] === true) {
-    triggerRender()
-  }
-  wheelingLastTime[id] = false
   return (
     <>
       {id === context.lastInteractedElemEd && context.inspecting && selected ? (
