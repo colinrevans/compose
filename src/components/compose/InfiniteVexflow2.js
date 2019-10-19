@@ -28,7 +28,9 @@ import {
   viewport,
 } from "../../lib/infinite-util"
 
-const debug = true
+const debug = false
+
+const avgTime = {}
 
 let toLog = []
 let logging = ""
@@ -85,6 +87,7 @@ export const InfiniteVexflow = ({
   selected,
   ...save
 }) => {
+  const begin = new Date()
   const { viewportX, viewportY } = viewport(x, y, context)
 
   const [options, setOptions] = useState(
@@ -914,6 +917,17 @@ export const InfiniteVexflow = ({
       key: /m/,
       fn: () => doLastCommand(),
     },
+    diagnostics: {
+      key: /p/,
+      fn: () => {
+        console.log(
+          "avg of averages: ",
+          Object.keys(avgTime)
+            .map(e => avgTime[e].avg)
+            .reduce((a, b) => a + b)
+        )
+      },
+    },
     "log current": {
       key: /^,$/,
       fn: () => {
@@ -1075,12 +1089,12 @@ export const InfiniteVexflow = ({
     context.setNoteMode(true)
   }, [])
 
-  const repeatAllInCurrentVoice = () => {
+  const repeatAllInCurrentVoice = useCallback(() => {
     if (!getCurrent()) return
     getCurrent().owner.duplicate()
     preserveCurrent()
     triggerRender()
-  }
+  }, [getCurrent, preserveCurrent])
 
   const commandFieldCommands = {
     write: {
@@ -1213,62 +1227,70 @@ export const InfiniteVexflow = ({
     [commandKeys, showCommandField, commandFieldCommands]
   )
 
-  const removeSVGs = () => {
+  const removeSVGs = useCallback(() => {
     const me = document.getElementById(`vex-${id}`)
     if (me === null) return
     const svgList = me.getElementsByTagName("svg")
     for (let svg of svgList) {
       svg.remove()
     }
-  }
+  }, [id])
 
-  const onTemporalClick = tickable => e => {
-    let temporal = DOMIdsToVexflows[id][tickable.attrs.id]
-    if (!temporal) return
-    console.log(temporal.owner.temporals.map(temp => temp.duration.toString()))
-    console.log(e)
-    if (e.shiftKey) {
-      if (temporal.canonical.duration < 4)
-        temporal.canonical.duration.augment(2)
-      triggerRender()
-    } else if (e.metaKey) {
-      if (temporal.canonical.duration > 1 / 16)
-        temporal.canonical.duration.diminute(2)
-      triggerRender()
-    }
-    DOMIdsToVexflows[id][tickable.attrs.id].selected = true
-    SETCURRENT(tickable.attrs.id)
-    setPreCurrent(false)
-  }
+  const onTemporalClick = useCallback(
+    tickable => e => {
+      let temporal = DOMIdsToVexflows[id][tickable.attrs.id]
+      if (!temporal) return
+      console.log(
+        temporal.owner.temporals.map(temp => temp.duration.toString())
+      )
+      console.log(e)
+      if (e.shiftKey) {
+        if (temporal.canonical.duration < 4)
+          temporal.canonical.duration.augment(2)
+        triggerRender()
+      } else if (e.metaKey) {
+        if (temporal.canonical.duration > 1 / 16)
+          temporal.canonical.duration.diminute(2)
+        triggerRender()
+      }
+      DOMIdsToVexflows[id][tickable.attrs.id].selected = true
+      SETCURRENT(tickable.attrs.id)
+      setPreCurrent(false)
+    },
+    [id]
+  )
 
-  const injectEventListeners = tickable => {
-    tickable.attrs.el.addEventListener(
-      "click",
-      onTemporalClick(tickable),
-      false
-    )
-    let c = 0
-    for (let staveNote of tickable.attrs.el.children) {
-      for (let note of staveNote.children) {
-        if (note.getAttribute("class") === "vf-notehead") {
-          let a = c
-          note.addEventListener(
-            "click",
-            () => {
-              //note.children[0].style.fill = "maroon"
-              DOMIdsToVexflows[id][tickable.attrs.id].selected = true
-              SETCURRENT(tickable.attrs.id)
-              setPreCurrent(false)
-            },
-            true
-          )
-          c++
+  const injectEventListeners = useCallback(
+    tickable => {
+      tickable.attrs.el.addEventListener(
+        "click",
+        onTemporalClick(tickable),
+        false
+      )
+      let c = 0
+      for (let staveNote of tickable.attrs.el.children) {
+        for (let note of staveNote.children) {
+          if (note.getAttribute("class") === "vf-notehead") {
+            let a = c
+            note.addEventListener(
+              "click",
+              () => {
+                //note.children[0].style.fill = "maroon"
+                DOMIdsToVexflows[id][tickable.attrs.id].selected = true
+                SETCURRENT(tickable.attrs.id)
+                setPreCurrent(false)
+              },
+              true
+            )
+            c++
+          }
         }
       }
-    }
-  }
+    },
+    [id, onTemporalClick]
+  )
 
-  const renderVexflow = () => {
+  const renderVexflow = useCallback(() => {
     /** vexflow's taxonomy is poorly named btw.
      * a stave, for vexflow, is essentially a measure.
      * a staveNote may be a rest, a single note, or a chord.
@@ -1493,7 +1515,7 @@ export const InfiniteVexflow = ({
     } catch (err) {
       console.log("error during rendering: ", err)
     }
-  }
+  }, [id, injectEventListeners, music.staves])
 
   useEffect(() => {
     // TODO this has no sense for width and height
@@ -1713,6 +1735,19 @@ export const InfiniteVexflow = ({
           </VexPlaybackButton>
         ) : null}
       </div>
+      {(() => {
+        let end = new Date()
+        //console.log(avgTime)
+        if (avgTime) {
+          if (!avgTime[id]) avgTime[id] = { c: 0, avg: end - begin }
+          else {
+            let { c, avg } = avgTime[id]
+            let newC = c + 1
+            let newAvg = (avg * c + (end - begin)) / newC
+            avgTime[id] = { c: newC, avg: newAvg }
+          }
+        }
+      })()}
     </>
   )
 }
