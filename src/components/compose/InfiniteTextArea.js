@@ -30,7 +30,7 @@ const InfiniteTextArea = ({ context, id, scale, selected, x, y, ...save }) => {
   }, [id, context, text, options, bounding])
 
   useEffect(() => {
-    pushStateToCanvas()
+    if (!text === save.text) pushStateToCanvas()
   }, [text, bounding])
 
   const onChange = useCallback(

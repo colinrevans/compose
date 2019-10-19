@@ -28,7 +28,7 @@ import {
   viewport,
 } from "../../lib/infinite-util"
 
-const debug = false
+const debug = true
 
 const avgTime = {}
 
@@ -342,7 +342,7 @@ export const InfiniteVexflow = ({
             new Duration(...durationKeysToDurations[editorDuration])
           )
           n.makeCurrent = true
-          currentVoice.addBeforeIdx(n, 0)
+          if (currentVoice) currentVoice.addBeforeIdx(n, 0)
           setPreCurrent(false)
         }
         triggerRender()
@@ -384,52 +384,41 @@ export const InfiniteVexflow = ({
     context.setLastInteractedElemId(id)
   }, [])
 
-  const processMIDINoteOn = useCallback(
-    (midiNoteNumber, velocity) => {
-      midiNotesDown[midiNoteNumber] = true
-      if (!firstMidiNote) {
-        firstMidiNote = midiNoteNumber
-      }
-      if (id === context.lastInteractedElemId) pianoRoll({}, midiNoteNumber)
-    },
-    [id, context, pianoRoll]
-  )
+  const processMIDINoteOn = (midiNoteNumber, velocity) => {
+    midiNotesDown[midiNoteNumber] = true
+    if (!firstMidiNote) {
+      firstMidiNote = midiNoteNumber
+    }
+    if (id === context.lastInteractedElemId) pianoRoll({}, midiNoteNumber)
+  }
 
-  const processMIDINoteOff = useCallback(midiNoteNumber => {
+  const processMIDINoteOff = midiNoteNumber => {
     if (midiNotesDown[midiNoteNumber]) {
       midiNotesDown[midiNoteNumber] = null
     }
     if (firstMidiNote === midiNoteNumber) firstMidiNote = null
-  }, [])
+  }
 
-  const processMIDI = useCallback(
-    midiMessage => {
-      let command = midiMessage.data[0]
-      let note = midiMessage.data[1]
-      let velocity = midiMessage.data.length > 2 ? midiMessage.data[2] : 0
+  const processMIDI = midiMessage => {
+    let command = midiMessage.data[0]
+    let note = midiMessage.data[1]
+    let velocity = midiMessage.data.length > 2 ? midiMessage.data[2] : 0
 
-      console.log(`MIDI message received: ${command} ${note} ${velocity}`)
-      if (command === 146 || command === 144) {
-        if (velocity > 0) processMIDINoteOn(note, velocity)
-        if (velocity === 0) processMIDINoteOff(note)
-      }
-      if (command === 191 && note === 113 && velocity === 127) {
-        enharmonicCurrent()
-      }
-      if (command === 191 && note === 114 && velocity === 127) {
-        adjustCurrentsOctave(-1)
-      }
-      if (command === 191 && note === 115 && velocity === 127) {
-        adjustCurrentsOctave(1)
-      }
-    },
-    [
-      adjustCurrentsOctave,
-      enharmonicCurrent,
-      processMIDINoteOn,
-      processMIDINoteOff,
-    ]
-  )
+    console.log(`MIDI message received: ${command} ${note} ${velocity}`)
+    if (command === 146 || command === 144) {
+      if (velocity > 0) processMIDINoteOn(note, velocity)
+      if (velocity === 0) processMIDINoteOff(note)
+    }
+    if (command === 191 && note === 113 && velocity === 127) {
+      enharmonicCurrent()
+    }
+    if (command === 191 && note === 114 && velocity === 127) {
+      adjustCurrentsOctave(-1)
+    }
+    if (command === 191 && note === 115 && velocity === 127) {
+      adjustCurrentsOctave(1)
+    }
+  }
 
   useEffect(() => {
     if (navigator.requestMIDIAccess) {
@@ -936,6 +925,7 @@ export const InfiniteVexflow = ({
           return
         }
         console.log(CURRENT)
+        console.log("current voice", currentVoice)
         console.log(DOMIdsToVexflows[id][CURRENT])
         console.log("current duration: ", getCurrent().duration.toString())
         console.log("owner:", getCurrent().canonical.owner)

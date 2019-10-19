@@ -70,11 +70,16 @@ const Compose = () => {
   // toggled every time a component saves.
   // see useEffect below that saves canvas whenever
   // this changes.
-  const [saveTicker, setSaveTicker] = useState(null)
+  const [saveTicker, _setSaveTicker] = useState(null)
   const setElements = (x, from) => {
     console.log("setting elements")
     if (from) console.log("from ", from)
     _setElements(x)
+  }
+  const setSaveTicker = (x, from) => {
+    console.log("setting save ticker")
+    if (from) console.log("from ", from)
+    _setSaveTicker(x)
   }
 
   for (let element of elements) {
@@ -109,7 +114,7 @@ const Compose = () => {
         ),
       "c98"
     )
-    setSaveTicker(s => !s)
+    setSaveTicker(s => !s, "c112")
   }
 
   useEffect(() => {
