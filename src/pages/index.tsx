@@ -8,7 +8,7 @@ import Compose from "./compose"
 
 const fontFamily = '"Helvetica Neue", Helvetica, Arial, sans-serif'
 
-const IndexPage = ({ data }) => {
+const IndexPage = ({ data }): ReactNode => {
   const { edges: posts } = data.allSitePage
   // temporarily reroute to compose app proper.
   return (
