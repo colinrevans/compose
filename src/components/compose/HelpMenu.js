@@ -1,10 +1,9 @@
 import React from "react"
 import keycode from "keycode"
 
-const HelpMenu = ({ commands }: { commands: any }) => {
+const HelpMenu = ({ commands }) => {
   return (
     <>
-      //@ts-ignore
       <style jsx>
         {`
           .container {
@@ -32,6 +31,7 @@ const HelpMenu = ({ commands }: { commands: any }) => {
           border: "1px solid grey",
           fontFamily: "sans-serif",
           fontSize: "80%",
+          sizing: "content-box",
           zIndex: 2,
         }}
       >
@@ -46,14 +46,10 @@ const HelpMenu = ({ commands }: { commands: any }) => {
                 <span style={{ marginLeft: "80px" }}> </span>
                 <span style={{ float: "right" }}>
                   {command.keys
-                    .map((key: string) =>
-                      keycode(key)
-                        ? keycode(key)
-                            .toString()
-                            .toUpperCase()
-                        : ""
+                    .map(key =>
+                      keycode(key) ? keycode(key).toUpperCase() : ""
                     )
-                    .reduce((a: string, b: string) => a + " + " + b)}
+                    .reduce((a, b) => a + " + " + b)}
                 </span>
                 <br />
               </>

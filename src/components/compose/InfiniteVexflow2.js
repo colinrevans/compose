@@ -1527,7 +1527,12 @@ export const InfiniteVexflow = ({
     */
     console.log("*********************************")
     console.log("RENDER EFFECT")
-    console.log("ID ", id)
+    console.log(
+      "ID ",
+      id,
+      "MUSIC: ",
+      music.staves ? music.staves[0].voices[0].toString() : "none"
+    )
     console.log("********************************")
     removeSVGs()
     renderVexflow()

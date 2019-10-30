@@ -66,12 +66,9 @@ a {
   background-color: transparent;
   -webkit-text-decoration-skip: objects;
   color: #003344;
-  text-decoration-color: #999999;
-  transition: 0.2s;
 }
 a:active,
 a:hover {
-  text-decoration-color: #777777;
   color: #999999;
   transition: 0.5s;
   outline-width: 0;
