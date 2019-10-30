@@ -1,13 +1,8 @@
 import { uniq } from "ramda"
-import { RationalInterface } from "./rational"
-import Note, { NoteInterface, NoteJSON } from "./note"
-import { Temporal } from "./temporal"
+import Note from "./note"
 import { isTemporal } from "./util"
-import { VoiceInterface } from "./voice"
 import Rest from "./rest"
-
-import Duration, { DurationInterface, DurationJSON } from "./duration"
-import { TimeSignatureInterface } from "./time-signature"
+import Duration from "./duration"
 
 /**
  * Verticality --
@@ -21,91 +16,15 @@ import { TimeSignatureInterface } from "./time-signature"
 // alternative constructor, eg
 // chord('c4', 'e4', 'g4')
 // use this if you don't need to care about duration information/a duration of 1/1 is ok
-export const chord = (...args: any[]) => new Verticality([...args])
+export const chord = (...args) => new Verticality([...args])
 
-interface VerticalityVexflowRepresentation {
-  duration: string
-  keys: string[]
-}
-
-export interface VerticalityJSON {
-  type: "verticality"
-  notes: NoteJSON[]
-  duration: DurationJSON
-}
-
-// TODO: consider breaking the interface in two:
-// one interface to represent a verticality (an array of notes)
-// one interface to represent said verticality along with editor-pertinent information (eg insertAfter and the like)
-export interface VerticalityInterface {
-  notes: NoteInterface[]
-  duration: DurationInterface
-  canonical: VerticalityInterface
-  vexflowRepresentation: VerticalityVexflowRepresentation
-  makeCurrent?: boolean
-  startsAt?: number
-  endsAt?: number
-  tie?: boolean
-  endTie?: boolean
-  owner: VoiceInterface | null
-  DOMId: string | null
-  next: Temporal | null
-  prev: Temporal | null
-  beats: number
-  midiNoteNumbers: number[]
-  intervals: number[]
-  ABIntervals: number[]
-  ABIntervalSet: string
-  insertAfter: (temp: Temporal) => void // stateful
-  insertBefore: (temp: Temporal) => void // stateful
-  setDOMId: (id: string) => VerticalityInterface // stateful
-  addNote: (n: NoteInterface) => VerticalityInterface
-  isChord: () => boolean
-  isCanonical: () => boolean
-  turnIntoRest: () => void
-  deleteFromOwningVoice: (addMakeCurrentFlag: boolean) => void
-  durationAccordingToTimeSignature: (sig: TimeSignatureInterface) => number
-  durationAccordingToTimeSignatureAsRational: (
-    sig: TimeSignatureInterface
-  ) => RationalInterface
-  copy: () => VerticalityInterface
-  invertUp: () => VerticalityInterface // stateful
-  invertDown: () => VerticalityInterface // stateful
-  invertedUp: () => VerticalityInterface // functional
-  invertedDown: () => VerticalityInterface // funcitonal
-  addLinks: (prev: Temporal, next: Temporal) => VerticalityInterface // stateful
-  withoutNthNote: (i: number) => VerticalityInterface // functional
-  withOctaveAdjustedBy: (n: number) => VerticalityInterface // functional
-  mergedWith: (other: VerticalityInterface) => VerticalityInterface // functional
-  transposeByHalfSteps: (steps: number) => VerticalityInterface // stateful
-  toString: () => string
-  toJSON: () => VerticalityJSON
-}
-
-class Verticality implements VerticalityInterface {
-  canonical: Verticality
-  duration: DurationInterface
-  owner: VoiceInterface | null
-  DOMId: string | null
-  makeCurrent?: boolean
-  tie?: boolean
-  endTie?: boolean
-  private _next: Temporal | null
-  private _prev: Temporal | null
-  private _notes: NoteInterface[]
-
+class Verticality {
   /**
    * notes is a list of Notes.
    * duration is a Duration.
    */
-  constructor(notes: NoteInterface, duration?: DurationInterface)
-  constructor(notes: NoteInterface[], duration?: DurationInterface)
-  constructor(
-    notes = [] as NoteInterface | NoteInterface[],
-    duration = new Duration(1)
-  ) {
+  constructor(notes = [], duration = new Duration(1)) {
     if (!Array.isArray(notes)) notes = [notes]
-    this._notes = []
     this.notes = notes
     this.duration = duration
     // when verticalities end up crossing a barline,
@@ -124,27 +43,16 @@ class Verticality implements VerticalityInterface {
     return this._notes
   }
 
-  // NOTE: We have to bullshit typescript here.
-  // Our setter allows for an array of Note instances
-  // or Note strings (ie (NoteInterface | string)[]).
-  // Typescript doesn't allow setters like this,
-  // so we lie to it.
-  // unfortunately this means the user of the API
-  // has to @ts-ignore or type cast whenever
-  // the note string version is used for assignment.
-  // see note.tsx for the definition of 'note string'
-  // in practice
-  set notes(notes: NoteInterface[]) {
+  set notes(notes) {
     if (!Array.isArray(notes))
       throw new TypeError('"notes" for verticality should be an array.')
-    else if (notes.every((note: any) => note instanceof Note)) {
-      this._notes = notes as NoteInterface[]
-    } else if (notes.every((note: any) => typeof note === "string")) {
-      this._notes = notes.map((note: any) => new Note(note)) as NoteInterface[]
+    else if (notes.every(note => note instanceof Note)) {
+      this._notes = notes
+    } else if (notes.every(note => typeof note === "string")) {
+      this._notes = notes.map(note => new Note(note))
     } else if (Array.isArray(notes) && notes.length === 0) {
-      this._notes = [] as NoteInterface[]
+      this._notes = []
     } else {
-      this._notes = [] as NoteInterface[]
       throw new TypeError("inconsistent or invalid note array for verticality.")
     }
   }
@@ -167,29 +75,33 @@ class Verticality implements VerticalityInterface {
     else throw new TypeError("Verticality cannot be linked to non-temporals.")
   }
 
-  insertAfter(temporal: Temporal) {
+  get duration() {
+    return this._duration
+  }
+
+  insertAfter(temporal) {
     if (!this.owner)
       throw new Error("Verticality has no owner. Insert impossible.")
     this.owner.addAfterIdx(temporal, this.owner.indexOf(this.canonical))
   }
 
-  insertBefore(temporal: Temporal) {
+  insertBefore(temporal) {
     if (!this.owner)
       throw new Error("Verticality has no owner. Insert impossible.")
     this.owner.addBeforeIdx(temporal, this.owner.indexOf(this.canonical))
   }
 
-  setDOMId(id: string) {
+  setDOMId(id) {
     this.DOMId = id
     return this
   }
 
-  addNote(note: NoteInterface) {
+  addNote(note) {
     if (!(note instanceof Note))
       throw new TypeError("tried to add a non-note to a verticality.")
     this.makeCurrent = true
-    if (this.notes.map(n => n.toString()).includes(note.toString())) return this
-    this.notes = ([...this.notes, note] as NoteInterface[]).sort(
+    if (this.notes.map(n => n.toString()).includes(note.toString())) return
+    this.notes = [...this.notes, note].sort(
       (a, b) => a.midiNoteNumber - b.midiNoteNumber
     )
     return this
@@ -204,7 +116,6 @@ class Verticality implements VerticalityInterface {
   }
 
   turnIntoRest() {
-    //@ts-ignore
     let rest = new Rest(this.duration.copy())
     rest.makeCurrent = true
     this.canonical.insertBefore(rest)
@@ -225,16 +136,25 @@ class Verticality implements VerticalityInterface {
     } else {
       // canonical verticality is longer, so just reduce the canonical duration
       // by this verticality's duration.
-      // @ts-ignore - (involved string union type vs. string. dumb. fix isn't pretty)
       this.canonical.duration = this.canonical.duration.minus(this.duration)
       if (addMakeCurrentFlag) this.canonical.makeCurrent = true
     }
   }
 
+  set duration(duration) {
+    if (typeof duration === "number") duration = new Duration(duration)
+    if (!(duration instanceof Duration)) {
+      throw new TypeError(
+        '"duration" for verticality should be an instance of Duration.'
+      )
+    }
+    this._duration = duration
+  }
+
   get vexflowRepresentation() {
     return {
       duration: this.duration.vexflowRepresentation,
-      keys: (this.notes as NoteInterface[]).map(n => n.vexflowRepresentation),
+      keys: this.notes.map(n => n.vexflowRepresentation),
     }
   }
 
@@ -243,27 +163,24 @@ class Verticality implements VerticalityInterface {
     return this
   }
 
-  durationAccordingToTimeSignature(sig: TimeSignatureInterface) {
+  durationAccordingToTimeSignature(sig) {
     return this.duration.durationAccordingToTimeSignature(sig)
   }
 
-  associateWithDOMId(id: string) {
+  associateWithDOMId(id) {
     this.DOMId = id
   }
 
   copy() {
-    return new Verticality(
-      (this.notes as NoteInterface[]).map(n => n.copy()),
-      this.duration.copy()
-    )
+    return new Verticality(this.notes.map(n => n.copy()), this.duration.copy())
   }
 
-  durationAccordingToTimeSignatureAsRational(sig: TimeSignatureInterface) {
+  durationAccordingToTimeSignatureAsRational(sig) {
     return this.duration.durationAccordingToTimeSignatureAsRational(sig)
   }
 
   invertUp() {
-    let [toInvert, ...unchanged] = this.notes as NoteInterface[]
+    let [toInvert, ...unchanged] = this.notes
     toInvert = toInvert.withOctaveAdjustedBy(1)
     this.notes = [...unchanged, toInvert]
     return this
@@ -271,14 +188,14 @@ class Verticality implements VerticalityInterface {
 
   invertDown() {
     let unchanged = this.notes.slice(0, this.notes.length - 1)
-    let toInvert = this.notes[this.notes.length - 1] as NoteInterface
+    let toInvert = this.notes[this.notes.length - 1]
     toInvert = toInvert.withOctaveAdjustedBy(-1)
     this.notes = [toInvert, ...unchanged]
     return this
   }
 
   invertedUp() {
-    let [toInvert, ...unchanged] = this.notes as NoteInterface[]
+    let [toInvert, ...unchanged] = this.notes
     toInvert = toInvert.withOctaveAdjustedBy(1)
     return new Verticality([...unchanged, toInvert], this.duration).addLinks(
       this.prev,
@@ -286,7 +203,7 @@ class Verticality implements VerticalityInterface {
     )
   }
 
-  addLinks(prev: Temporal, next: Temporal) {
+  addLinks(prev, next) {
     this.prev = prev
     this.next = next
     return this
@@ -297,7 +214,7 @@ class Verticality implements VerticalityInterface {
   }
 
   get midiNoteNumbers() {
-    return (this.notes as NoteInterface[]).map(n => n.midiNoteNumber)
+    return this.notes.map(n => n.midiNoteNumber)
   }
 
   get intervals() {
@@ -331,22 +248,22 @@ class Verticality implements VerticalityInterface {
     return "v" + ret.join("")
   }
 
-  withoutNthNote(n: number) {
+  withoutNthNote(n) {
     if (n >= this.notes.length)
       throw new RangeError("verticality access out of bounds")
     // negative goes from the end
     if (n < 0) n = this.notes.length - (Math.abs(n) % this.notes.length)
     return new Verticality(
       [
-        ...(this.notes as NoteInterface[]).slice(0, n),
-        ...(this.notes as NoteInterface[]).slice(n + 1, this.notes.length),
+        ...this.notes.slice(0, n),
+        ...this.notes.slice(n + 1, this.notes.length),
       ],
       this.duration
     )
   }
 
   invertedDown() {
-    let toInvert = this.notes[this.notes.length - 1] as NoteInterface
+    let toInvert = this.notes[this.notes.length - 1]
     toInvert = toInvert.withOctaveAdjustedBy(-1)
     let unchanged = this.notes.slice(0, this.notes.length - 1)
     return new Verticality([toInvert, ...unchanged], this.duration).addLinks(
@@ -355,28 +272,26 @@ class Verticality implements VerticalityInterface {
     )
   }
 
-  withOctaveAdjustedBy(n: number) {
+  withOctaveAdjustedBy(n) {
     return new Verticality(
-      (this.notes as NoteInterface[]).map(note => note.withOctaveAdjustedBy(n)),
+      this.notes.map(note => note.withOctaveAdjustedBy(n)),
       this.duration
     ).addLinks(this.prev, this.next)
   }
 
-  mergedWith(other: VerticalityInterface) {
+  mergedWith(other) {
     if (!(other instanceof Verticality))
       throw new TypeError("mergedWith requires another Verticality")
     return new Verticality(
-      uniq([...this.notes, ...other.notes] as NoteInterface[]).sort(
+      uniq([...this.notes, ...other.notes]).sort(
         (a, b) => a.midiNoteNumber - b.midiNoteNumber
       ),
       this.duration
     ).addLinks(this.prev, this.next)
   }
 
-  transposeByHalfSteps(steps: number) {
-    this.notes = (this.notes as NoteInterface[]).map(n =>
-      n.transposeByHalfSteps(steps)
-    )
+  transposeByHalfSteps(steps) {
+    this.notes = this.notes.map(n => n.transposeByHalfSteps(steps))
     return this
   }
 
@@ -390,10 +305,8 @@ class Verticality implements VerticalityInterface {
 
   toJSON() {
     return {
-      type: "verticality" as "verticality",
-      notes: (this.notes as NoteInterface[]).map((n: NoteInterface) =>
-        n.toJSON()
-      ),
+      type: "verticality",
+      notes: this.notes.map(n => n.toJSON()),
       duration: this.duration.toJSON(),
     }
   }
@@ -412,6 +325,6 @@ const ABIntervalsToLetters = {
   "9": "9",
   "10": "t",
   "11": "e",
-} as { [interval: string]: string }
+}
 
 export default Verticality

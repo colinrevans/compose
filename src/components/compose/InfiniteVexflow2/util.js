@@ -3,10 +3,10 @@ import Staff from "../../../lib/music/staff"
 import Voice from "../../../lib/music/voice"
 import Rest from "../../../lib/music/rest"
 import Note from "../../../lib/music/note"
-import Verticality from "../../../lib/music/verticality"
-import Duration from "../../../lib/music/duration"
+import Verticality from "../../../lib/music/verticality.js"
+import Duration from "../../../lib/music/duration.js"
 import Clef from "../../../lib/music/clef"
-import System from "../../../lib/music/system"
+import System from "../../../lib/music/system.js"
 
 export const applyFnToElemAndChildren = (fn, elem) => {
   if (elem.children.length > 0) {
