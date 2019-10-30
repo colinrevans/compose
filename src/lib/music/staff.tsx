@@ -1,11 +1,12 @@
-import Voice from "./voice"
+import Voice, { VoiceInterface } from "./voice"
 import { flatten } from "ramda"
 import Rest from "./rest"
 import Rational from "./rational"
-import Duration from "./duration"
+import Duration, { DurationInterface } from "./duration"
 import Verticality from "./verticality"
-import Clef from './clef'
-import TimeSignature from "./time-signature"
+import { Temporal } from "./temporal"
+import Clef, { ClefInterface } from "./clef"
+import TimeSignature, { TimeSignatureInterface } from "./time-signature"
 import empty from "is-empty"
 
 /**
@@ -26,10 +27,11 @@ import empty from "is-empty"
  * note that a grand staff, in our taxonomy, is actually a System object with two staves.
  */
 
-class TimingError extends Error {}
+class TimingError extends Error { }
 
 export class LineBreak {
-  at(n) {
+  position?: number
+  at(n: number) {
     this.position = n
     return this
   }
@@ -38,6 +40,7 @@ export class LineBreak {
 // staff uses instanceof on these to make sure everything
 // in a staff is valid
 const permissibleObjects = [Voice, TimeSignature, LineBreak, Clef]
+type MusicObject = VoiceInterface | ClefInterface | TimeSignatureInterface
 
 // Collide
 //
@@ -180,57 +183,97 @@ const reconcile = voices => {
     console.log("Aidx now ", Aidx, " and Bidx now ", Bidx)
 
     /*
-    while (
-      voiceA[idxOfLastAInBox] &&
-      voiceB[idxOfLastBInBox] &&
-      voiceA[idxOfLastAInBox].startsAt < voiceB[idxOfLastBInBox].endsAt
-    ) {
-      console.log("current A: ", voiceA[idxOfLastAInBox].toString())
-      while (
-        voiceB[idxOfLastBInBox] &&
-        voiceB[idxOfLastBInBox].startsAt < voiceA[idxOfLastAInBox].endsAt
-      ) {
-        console.log("current B: ", voiceB[idxOfLastBInBox].toString())
-        if (
-          !meet(voiceA[idxOfLastAInBox], voiceB[idxOfLastBInBox]) &&
-          above(voiceA[idxOfLastAInBox], voiceB[idxOfLastBInBox]) !== dir
-        ) {
-          console.log("collision. ", Aidx, Bidx)
-          if (
-            voiceA[idxOfLastAInBox].startsAt ===
-              voiceB[idxOfLastBInBox].startsAt &&
-            voiceA[idxOfLastAInBox].endsAt === voiceB[idxOfLastBInBox].endsAt
-          ) {
-            voices[0].voice.temporals[voiceA[idxOfLastAInBox].voiceIdx] =
-              voiceB[idxOfLastBInBox]
-            voices[1].voice.temporals[voiceB[idxOfLastBInBox].voiceIdx] =
-              voiceA[idxOfLastAInBox]
-          }
-        }
-        idxOfLastBInBox++
-      }
-      idxOfLastAInBox++
-      if (
-        voiceA[idxOfLastAInBox] &&
-        voiceB[idxOfLastBInBox] &&
-        voiceA[idxOfLastAInBox - 1].endsAt <=
-          voiceB[idxOfLastBInBox].startsAt &&
-        voiceB[idxOfLastBInBox - 1].startsAt <= voiceA[idxOfLastAInBox].endsAt
-      )
-        break
-    }
+while (
+voiceA[idxOfLastAInBox] &&
+voiceB[idxOfLastBInBox] &&
+voiceA[idxOfLastAInBox].startsAt < voiceB[idxOfLastBInBox].endsAt
+) {
+console.log("current A: ", voiceA[idxOfLastAInBox].toString())
+while (
+voiceB[idxOfLastBInBox] &&
+voiceB[idxOfLastBInBox].startsAt < voiceA[idxOfLastAInBox].endsAt
+) {
+console.log("current B: ", voiceB[idxOfLastBInBox].toString())
+if (
+!meet(voiceA[idxOfLastAInBox], voiceB[idxOfLastBInBox]) &&
+above(voiceA[idxOfLastAInBox], voiceB[idxOfLastBInBox]) !== dir
+) {
+console.log("collision. ", Aidx, Bidx)
+if (
+voiceA[idxOfLastAInBox].startsAt ===
+voiceB[idxOfLastBInBox].startsAt &&
+voiceA[idxOfLastAInBox].endsAt === voiceB[idxOfLastBInBox].endsAt
+) {
+voices[0].voice.temporals[voiceA[idxOfLastAInBox].voiceIdx] =
+voiceB[idxOfLastBInBox]
+voices[1].voice.temporals[voiceB[idxOfLastBInBox].voiceIdx] =
+voiceA[idxOfLastAInBox]
+}
+}
+idxOfLastBInBox++
+}
+idxOfLastAInBox++
+if (
+voiceA[idxOfLastAInBox] &&
+voiceB[idxOfLastBInBox] &&
+voiceA[idxOfLastAInBox - 1].endsAt <=
+voiceB[idxOfLastBInBox].startsAt &&
+voiceB[idxOfLastBInBox - 1].startsAt <= voiceA[idxOfLastAInBox].endsAt
+)
+break
+}
 
-    Aidx = idxOfLastAInBox
-    Bidx = idxOfLastBInBox
-    */
+Aidx = idxOfLastAInBox
+Bidx = idxOfLastBInBox
+*/
     c++
   }
 
   return voices
 }
 
-class Staff {
-  constructor(entities) {
+interface OneVoiceMeasure {
+  timeSignature: TimeSignatureInterface
+  owner: VoiceInterface
+  voice: VoiceInterface // voice fills measure exactly
+}
+// note:
+// OneVoiceMeasure[] can represent both complete measures comprising one voice each,
+// or many voices of one complete measure (within Measure interface below)
+
+interface Measure {
+  timeSignature: TimeSignatureInterface
+  voices: VoiceWithinMeasure[] // each voice fills measure exactly
+}
+
+interface VoiceWithinMeasure {
+  owner: VoiceInterface
+  voice: VoiceInterface
+}
+
+interface StaffInterface {
+  entities: MusicObject[]
+  empty: boolean
+  clefs: ClefInterface[]
+  timeSignatures: TimeSignatureInterface[]
+  voices: VoiceInterface[]
+  splitVoice: (v: VoiceInterface, idx: number) => OneVoiceMeasure[]
+  splitVoices: Measure[]
+  measures: Measure[] // getter version of splitVoices
+  remove: (obj: MusicObject) => StaffInterface
+  locate: (obj: MusicObject) => void
+  includes: (obj: MusicObject) => boolean
+  positionsOfVoice: (v: VoiceInterface) => number[]
+  above: (v1: VoiceInterface, v2: VoiceInterface) => boolean
+  add: (ent: MusicObject) => StaffInterface
+  timeSignatureOfNthMeasure: (n: number) => TimeSignatureInterface
+}
+
+class Staff implements StaffInterface {
+  private _entities: MusicObject[]
+
+  constructor(entities: MusicObject[]) {
+    this._entities = [] as MusicObject[]
     this.entities = entities
   }
 
@@ -252,14 +295,16 @@ class Staff {
       }
       if (!entity.position) entity.position = 0
     }
-    this._entities = entities.sort((a, b) => a.position - b.position)
+    this._entities = entities.sort(
+      (a, b) => (a.position || 0) - (b.position || 0)
+    )
   }
 
   get entities() {
     return this._entities
   }
 
-  remove(obj) {
+  remove(obj: MusicObject) {
     if (this.includes(obj)) {
       let ret = []
       for (let ent of this.entities) {
@@ -270,20 +315,22 @@ class Staff {
     return this
   }
 
-  locate(obj) {
+  locate(obj: MusicObject) {
     if (!this.entities.includes(obj)) throw new Error("object not in staff.")
   }
 
-  includes(obj) {
+  includes(obj: MusicObject) {
     return this.entities.includes(obj)
   }
 
   get clefs() {
-    return this.entities.filter(obj => obj instanceof Clef)
+    return this.entities.filter(obj => obj instanceof Clef) as ClefInterface[]
   }
 
   get timeSignatures() {
-    return this.entities.filter(obj => obj instanceof TimeSignature)
+    return this.entities.filter(
+      obj => obj instanceof TimeSignature
+    ) as TimeSignatureInterface[]
   }
 
   get lineBreaks() {
@@ -291,7 +338,7 @@ class Staff {
   }
 
   get voices() {
-    return this.entities.filter(obj => obj instanceof Voice)
+    return this.entities.filter(obj => obj instanceof Voice) as VoiceInterface[]
   }
 
   get measures() {
@@ -305,7 +352,7 @@ class Staff {
     return false
   }
 
-  splitVoices() {
+  splitVoices(): Measure[] {
     let splittedVoices = this.voices.map(v => this.splitVoice(v, v.position))
     let ret = []
     for (let voice of splittedVoices) {
@@ -332,7 +379,7 @@ class Staff {
   }
 
   // positions of voice's temporals relative to staff's measures.
-  positionsOfVoice(voice) {
+  positionsOfVoice(voice: VoiceInterface) {
     if (voice.position === undefined) throw new Error("voice has no position")
     let measures = this.splitVoice(voice, voice.position)
     return flatten(
@@ -344,16 +391,18 @@ class Staff {
     )
   }
 
-  splitVoice(voice, startingPos) {
+  splitVoice(voice: VoiceInterface, startingPos: number): OneVoiceMeasure[] {
     if (voice.temporals.length === 0) {
-      return {
-        timeSignature: new TimeSignature(4, 4),
-        owner: voice,
-        voice: new Voice([]).at(startingPos),
-      }
+      return [
+        {
+          timeSignature: new TimeSignature(4, 4),
+          owner: voice,
+          voice: new Voice([]).at(startingPos),
+        },
+      ]
     }
     let log
-    if (voice.temporals[0].notes)
+    if (voice.temporals[0] instanceof Verticality)
       if (voice.temporals[0].notes[0].toString() === "E6") {
         log = true
 
@@ -367,14 +416,14 @@ class Staff {
     voice.temporals[voice.temporals.length - 1].next = null
 
     let curPos = new Rational(0, 1)
-    let splitVoices = []
-    let currentMeasure = []
+    let splitVoices = [] as OneVoiceMeasure[]
+    let currentMeasure = [] as Temporal[]
     let sig = this.timeSignatureOfNthMeasure(splitVoices.length + 1)
     for (let temporal of voice.temporals) {
       if (log) console.log("START FOR: ", temporal.toString())
       let durInSig = temporal.durationAccordingToTimeSignatureAsRational(sig)
       if (log) console.log(curPos.plus(durInSig).toString())
-      if (curPos.plus(durInSig) <= 1) {
+      if (curPos.plus(durInSig).valueOf() <= 1) {
         // this temporal fits inside the current measure.
         temporal.startsAt = curPos.valueOf()
         curPos = curPos.plus(durInSig)
@@ -399,7 +448,7 @@ class Staff {
           sig = this.timeSignatureOfNthMeasure(splitVoices.length + 1)
           curPos = new Rational(0, 1)
         }
-      } else if (curPos.plus(durInSig) > 1) {
+      } else if (curPos.plus(durInSig).valueOf() > 1) {
         let start = curPos.valueOf()
         curPos = curPos.plus(durInSig)
         // we've overshot the barline.
@@ -414,7 +463,7 @@ class Staff {
           splitVoices.length + 2
         )
         let curMeasureSig = sig
-        let durInCurMeasure = overShotDur.minus(curPos.minus(1, 1))
+        let durInCurMeasure = overShotDur.minus(curPos.minus(1))
         let end = durInCurMeasure.valueOf()
         // we have to convert back to beat-wise duration from measure-wise duration
         if (log) console.log("durincurmeasure: ", durInCurMeasure)
@@ -423,7 +472,7 @@ class Staff {
         )
         if (log) console.log("pre duration: ", preDuration.toString())
         if (log) console.log("temporal duration: ", temporal.duration)
-        let postDuration = temporal.duration.duration.minus(preDuration)
+        let postDuration = temporal.duration.dur.minus(preDuration)
         if (log) console.log("post duration: ", postDuration)
         // account for timesignature changes like 4/4 -> 2/2
         postDuration = postDuration.times(
@@ -436,28 +485,29 @@ class Staff {
           console.log("predur: ", preDuration)
           console.log("postdur: ", postDuration)
         }
-        preDuration = new Duration(
+        let preAsDuration = new Duration(
           preDuration.numerator,
           preDuration.denominator
         )
-        postDuration = new Duration(
+        let postAsDuration = new Duration(
           postDuration.numerator,
           postDuration.denominator
         )
         if (log) console.log("didd")
         let firstTemporal
         if (temporal instanceof Verticality) {
-          firstTemporal = new Verticality(temporal.notes, preDuration)
+          firstTemporal = new Verticality(temporal.notes, preAsDuration)
           firstTemporal.tie = true
         } else if (temporal instanceof Rest)
-          firstTemporal = new Rest(preDuration)
+          firstTemporal = new Rest(preAsDuration)
+
         firstTemporal.canonical = temporal
         let secondTemporal
         if (temporal instanceof Verticality) {
-          secondTemporal = new Verticality(temporal.notes, postDuration)
+          secondTemporal = new Verticality(temporal.notes, postAsDuration)
           secondTemporal.endTie = true
         } else if (temporal instanceof Rest)
-          secondTemporal = new Rest(postDuration)
+          secondTemporal = new Rest(postAsDuration)
         secondTemporal.canonical = temporal
         secondTemporal.next = firstTemporal.next
         secondTemporal.prev = firstTemporal
@@ -529,23 +579,23 @@ class Staff {
     // add positions
     for (let i = 0; i < splitVoices.length; i++) {
       /*      console.log(
-        "BATCH: ",
-        splitVoices[i].voice.temporals.map(t => t.toString())
-      )
-      */
+"BATCH: ",
+splitVoices[i].voice.temporals.map(t => t.toString())
+)
+*/
       let temporals = splitVoices[i].voice.temporals
       for (let t of temporals) t.position = startingPos + i
       /*     console.log(
-        "Batch positions: ",
-        splitVoices[i].voice.temporals.map(t => t.position)
-      )
-      */
+"Batch positions: ",
+splitVoices[i].voice.temporals.map(t => t.position)
+)
+*/
     }
     if (log) splitVoices.forEach(v => console.log(v.voice.toString()))
     return splitVoices
   }
 
-  above(voice1, voice2) {
+  above(voice1: VoiceInterface, voice2: VoiceInterface) {
     //console.log("voice1: ", voice1.temporals.map(vert => vert.toString()))
     //console.log("voice2: ", voice2.temporals.map(vert => vert.toString()))
     let voice1positions = this.positionsOfVoice(voice1)
@@ -559,28 +609,30 @@ class Staff {
         voice2idx += 1
       }
       if (
-        voice1.temporals[idx] instanceof Rest ||
-        voice2.temporals[voice2idx - 1] instanceof Rest
+        !(voice1.temporals[idx] instanceof Verticality) ||
+        !(voice2.temporals[voice2idx - 1] instanceof Verticality)
       )
         continue
-      let voice1lowest = voice1.temporals[idx].notes[0]
-      let voice2highest =
-        voice2.temporals[voice2idx - 1].notes[
-          voice2.temporals[voice2idx - 1].notes.length - 1
+      else {
+        let voice1lowest = (voice1.temporals[idx] as Verticality).notes[0]
+        let voice2highest = (voice2.temporals[voice2idx - 1] as Verticality)
+          .notes[
+          (voice2.temporals[voice2idx - 1] as Verticality).notes.length - 1
         ]
-      if (voice1lowest.midiNoteNumber < voice2highest.midiNoteNumber)
-        return false
+        if (voice1lowest.midiNoteNumber < voice2highest.midiNoteNumber)
+          return false
+      }
     }
 
     return true
   }
 
-  add(ent) {
+  add(ent: MusicObject) {
     this.entities = [...this.entities, ent]
     return this
   }
 
-  timeSignatureOfNthMeasure(n) {
+  timeSignatureOfNthMeasure(n: number) {
     if (n <= 0)
       throw new RangeError(
         "invalid measure access. no zeroth or negative measure."
@@ -588,7 +640,7 @@ class Staff {
     let signatures = this.timeSignatures
     if (empty(signatures)) throw new Error("no time signatures on staff")
     let positions = signatures.map(sig => {
-      if (!Number.isInteger(sig.position))
+      if (sig.position === undefined || !Number.isInteger(sig.position))
         throw new TimingError("time signature not at measure boundary")
       return sig.position
     })
