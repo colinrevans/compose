@@ -87,8 +87,31 @@ export const MoveButton = ({ id, context, style, ...rest }) => {
   )
 }
 
+export const ZoomButton = ({ id, context, style, ...rest }) => {
+  return (
+    <span
+      className="noselect"
+      style={{
+        position: "fixed",
+        cursor: "pointer",
+        fontSize: 8,
+        zIndex: 100,
+        lineHeight: "1em",
+        transformOrigin: "top left",
+        ...style,
+      }}
+      onMouseDown={e => {
+        context.setZoom({ id, scale: rest.scale })
+      }}
+    >
+      z
+    </span>
+  )
+}
+
 export const HoverButtons = ({
   id,
+  scale,
   context,
   selected,
   hovering,
@@ -151,6 +174,22 @@ export const HoverButtons = ({
                 top:
                   viewportY +
                   10 * context.zoom.scale * options.scale +
+                  scaled(adjustY),
+                transform: `scale(${context.zoom.scale * options.scale})`,
+              }}
+            />
+            <ZoomButton
+              id={id}
+              context={context}
+              scale={scale}
+              style={{
+                left:
+                  viewportX -
+                  12 * context.zoom.scale * options.scale +
+                  scaled(adjustX),
+                top:
+                  viewportY +
+                  20 * context.zoom.scale * options.scale +
                   scaled(adjustY),
                 transform: `scale(${context.zoom.scale * options.scale})`,
               }}
