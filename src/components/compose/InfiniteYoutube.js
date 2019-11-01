@@ -48,6 +48,7 @@ const InfiniteYoutube = ({ context, scale, x, y, id, selected, ...save }) => {
 
       <HoverButtons
         id={id}
+        scale={scale}
         context={context}
         hovering={isHovering}
         setHovering={setIsHovering}

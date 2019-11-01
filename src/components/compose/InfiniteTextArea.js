@@ -95,6 +95,11 @@ const InfiniteTextArea = ({ context, id, scale, selected, x, y, ...save }) => {
         setOptions,
         pushStateToCanvas
       )}
+      {selected && id === context.lastInteractedElemId ? (
+        <div style={{ position: "fixed", bottom: 0, right: 0 }}>
+          {x}, {y}
+        </div>
+      ) : null}
       <div
         style={{
           position: "fixed",
@@ -102,6 +107,8 @@ const InfiniteTextArea = ({ context, id, scale, selected, x, y, ...save }) => {
           backgroundColor: "transparent",
           top: viewportY,
           left: viewportX,
+          width: bounding.width * context.zoom.scale * options.scale,
+          height: bounding.height * context.zoom.scale * options.scale,
           overflow: "visible",
           zIndex: 1,
         }}
@@ -128,7 +135,7 @@ const InfiniteTextArea = ({ context, id, scale, selected, x, y, ...save }) => {
             color: options.color,
             lineHeight: "1.1em",
             fontSize: 14,
-            transform: `scale(${context.zoom.scale / (1 / options.scale)})`,
+            transform: `scale(${context.zoom.scale * options.scale})`,
             transformOrigin: "top left",
             padding: 1,
           }}
@@ -144,6 +151,7 @@ const InfiniteTextArea = ({ context, id, scale, selected, x, y, ...save }) => {
       </div>
       <HoverButtons
         id={id}
+        scale={scale}
         context={context}
         scaled={scaled}
         hovering={hovering}

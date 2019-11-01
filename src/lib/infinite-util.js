@@ -18,7 +18,10 @@ export const getViewportCoordinates = (
   let newDiffYFromCenter = scaledY - viewportCenterY
   let viewportX = newDiffXFromCenter + zoomOriginX
   let viewportY = newDiffYFromCenter + zoomOriginY
-  return { viewportX, viewportY }
+  return {
+    viewportX: Math.floor(viewportX),
+    viewportY: Math.floor(viewportY),
+  }
 }
 
 export const viewport = (x, y, context) => {

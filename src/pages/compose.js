@@ -538,6 +538,7 @@ const Compose = () => {
           setLastInteractedElemId,
           inspecting,
           setInspecting,
+          setZoom,
           mouse,
           synth,
           zenMode,
@@ -558,7 +559,12 @@ const Compose = () => {
             if (e.shiftKey) {
               let dy = e.deltaY
               setZoom(z => {
-                return { ...z, scale: z.scale + dy * 0.01 * z.scale }
+                return {
+                  ...z,
+                  scale:
+                    Math.round((z.scale + dy * 0.01 * z.scale) * 100000) /
+                    100000,
+                }
               })
             } else {
               let dx = e.deltaX / zoom.scale

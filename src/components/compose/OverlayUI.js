@@ -122,7 +122,21 @@ const OverlayUI = ({
         style={{
           position: "fixed",
           bottom: 20,
-          left: 420,
+          left: 390,
+          transform: "scale(0.7)",
+
+          color: "grey",
+          zIndex: 14,
+        }}
+        onClick={() => setZoom({ scale: 1 })}
+      >
+        reset zoom
+      </Button>
+      <Button
+        style={{
+          position: "fixed",
+          bottom: 20,
+          left: 520,
           transform: "scale(0.7)",
           color: "grey",
           zIndex: 14,
