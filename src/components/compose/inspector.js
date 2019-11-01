@@ -6,6 +6,7 @@ import TextField from "@material-ui/core/TextField"
 
 export const Inspector = ({ options, setOptions, pushState }) => {
   const [tempOptions, setTempOptions] = useState(options)
+  console.log("render func")
 
   const handleChange = (e, key) => {
     setTempOptions(opt => ({ ...opt, [key]: e.target.value }))

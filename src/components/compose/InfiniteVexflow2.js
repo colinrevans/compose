@@ -21,6 +21,7 @@ import Rest from "../../lib/music/rest"
 import TimeSignature from "../../lib/music/time-signature"
 import { shouldHide, Crosshair, HoverButtons } from "./common"
 import { dragging, wheeling } from "../../pages/compose"
+import { inspectorForElement } from "./common"
 import {
   setElementPropertyById,
   deleteElementById,
@@ -147,16 +148,22 @@ export const InfiniteVexflow = ({
     DOMIdsToVexflows[id] = {}
   }, [])
 
-  const pushStateToCanvas = useCallback(() => {
-    //TODO save music as JSON string
-    let entsAsJSON = []
-    for (let ent of music.staves[0].entities) {
-      entsAsJSON.push(ent.toJSON())
-    }
-    let saveState = { music: entsAsJSON }
-    console.log("saving: ", entsAsJSON)
-    context.saveElement(id, { music: saveState, options })
-  }, [id, context, music, options])
+  const pushStateToCanvas = useCallback(
+    opts => {
+      //TODO save music as JSON string
+      let entsAsJSON = []
+      for (let ent of music.staves[0].entities) {
+        entsAsJSON.push(ent.toJSON())
+      }
+      let saveState = { music: entsAsJSON }
+      console.log("saving: ", entsAsJSON)
+      context.saveElement(id, {
+        music: saveState,
+        options: opts ? opts : options,
+      })
+    },
+    [id, context, music, options]
+  )
 
   const duplicate = useCallback(() => {
     let entsAsJSON = []
@@ -751,10 +758,38 @@ export const InfiniteVexflow = ({
     triggerRender()
   }, [getCurrent, preserveCurrent])
 
+  const allFlatsCurrent = useCallback(() => {
+    if (!getCurrent()) return
+    if (getCurrent().notes) {
+      getCurrent().notes.forEach(note => {
+        if (note.accidental.match(/#/)) {
+          note.toEnharmonic()
+        }
+      })
+      preserveCurrent()
+      triggerRender()
+    }
+  }, [getCurrent, preserveCurrent])
+
+  const allSharpsCurrent = useCallback(() => {
+    if (!getCurrent()) return
+    if (getCurrent().notes) {
+      getCurrent().notes.forEach(note => {
+        if (note.accidental.match(/b/)) {
+          note.toEnharmonic()
+        }
+      })
+      preserveCurrent()
+      triggerRender()
+    }
+  }, [getCurrent, preserveCurrent])
+
   const enharmonicCurrent = useCallback(() => {
     if (!getCurrent()) return
     if (getCurrent().notes && getCurrent().notes.length === 1) {
       getCurrent().notes[0].toEnharmonic()
+      preserveCurrent()
+      triggerRender()
     } else if (getCurrent().notes) {
       getCurrent().notes.forEach(note => {
         if (["b", "#"].includes(note.accidental)) {
@@ -763,10 +798,31 @@ export const InfiniteVexflow = ({
           console.log("enharmonic: ", note.accidental)
         }
       })
+      preserveCurrent()
+      triggerRender()
     }
-    preserveCurrent()
-    triggerRender()
   }, [getCurrent, preserveCurrent])
+
+  const setAccidentalsOnCurrent = useCallback(
+    accidentalString => {
+      let accidentals = accidentalString.split("")
+      if (!getCurrent()) return
+      if (getCurrent().notes) {
+        getCurrent().notes.forEach((note, idx) => {
+          let flat = note.accidental.match(/b/)
+          let sharp = note.accidental.match(/#/)
+          if (sharp && accidentals[idx] === "f") {
+            note.toEnharmonic()
+          } else if (flat && accidentals[idx] === "s") {
+            note.toEnharmonic()
+          }
+        })
+        preserveCurrent()
+        triggerRender()
+      }
+    },
+    [getCurrent, preserveCurrent]
+  )
 
   const addForcedNatural = useCallback(() => {
     if (!getCurrent() || !(getCurrent() instanceof Verticality)) return
@@ -1132,6 +1188,20 @@ export const InfiniteVexflow = ({
     ["octave down"]: {
       keys: [/o/, /d/],
       fn: () => adjustCurrentsOctave(-1),
+    },
+    ["switch accidentals to all flats"]: {
+      keys: [/a/, /f/],
+      fn: () => allFlatsCurrent(),
+    },
+    ["switch accidentals to all sharps"]: {
+      keys: [/a/, /s/],
+      fn: () => allSharpsCurrent(),
+    },
+    ["set accidentals from bottom"]: {
+      keys: [/a/, /a/],
+      fn: accidentals => setAccidentalsOnCurrent(accidentals),
+      argRegex: /^[fsn]+$/,
+      needsSubmit: true,
     },
     ["add note to upper voice"]: {
       keys: [/u/, pianoRollRegex],
@@ -1531,7 +1601,12 @@ export const InfiniteVexflow = ({
       "ID ",
       id,
       "MUSIC: ",
-      music.staves ? music.staves[0].voices[0].toString() : "none"
+      music.staves &&
+        music.staves[0] &&
+        music.staves[0].voices &&
+        music.staves[0].voices[0]
+        ? music.staves[0].voices[0].toString()
+        : "none"
     )
     console.log("********************************")
     removeSVGs()
@@ -1552,14 +1627,14 @@ export const InfiniteVexflow = ({
   if (shouldHide(id, context)) return null
   return (
     <>
-      {id === context.lastInteractedElemEd && context.inspecting && selected ? (
-        <Inspector
-          options={options}
-          setOptions={setOptions}
-          pushState={pushStateToCanvas}
-        />
-      ) : null}
-
+      {inspectorForElement(
+        id,
+        context,
+        selected,
+        options,
+        setOptions,
+        pushStateToCanvas
+      )}
       {id === context.lastInteractedElemId && context.noteMode ? (
         <div
           className="noselect"
@@ -1570,7 +1645,7 @@ export const InfiniteVexflow = ({
             fontFamily:
               "-apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen, Ubuntu, Cantarell, Fira Sans, Droid Sans, Helvetica Neue, sans-serif",
             color: "grey",
-            fontSize: 16,
+            fontSize: 13,
           }}
         >
           insert note mode. octave {octave}. dur:{" "}
@@ -1595,6 +1670,12 @@ export const InfiniteVexflow = ({
               : commandKeys.reduce((acc, cur) => acc + "-" + cur)
           }
         />
+      ) : null}
+
+      {selected && id === context.lastInteractedElemId ? (
+        <div style={{ position: "fixed", bottom: 0, right: 0, fontSize: 9 }}>
+          {x}, {y}: {viewportX}, {viewportY}. scale: {context.zoom.scale}
+        </div>
       ) : null}
 
       {(getCurrent() || noNotes || preCurrent) &&
@@ -1702,6 +1783,7 @@ export const InfiniteVexflow = ({
 
       <HoverButtons
         id={id}
+        scale={scale}
         context={context}
         scaled={scaled}
         hovering={isHovering}
@@ -1740,7 +1822,7 @@ export const InfiniteVexflow = ({
         }}
         id={`infiniteVex-${id}`}
       >
-        <div id={`vex-${id}`} />
+        <div id={`vex-${id}`} style={{ zIndex: 15 }} />
         {options.playback ? (
           <VexPlaybackButton
             disabled={context.synth ? false : true}
